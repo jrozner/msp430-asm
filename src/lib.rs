@@ -1,7 +1,13 @@
 use std::io::Read;
 
 #[derive(Debug, Clone, PartialEq)]
-struct Instruction {}
+enum Instruction {
+    JmpInstruction(JmpInstruction),
+    SingleOperand(SingleOperand),
+}
+
+#[derive(Debug, Clone, PartialEq)]
+struct SingleOperand {}
 
 /// JMP_MASK masks off the high three bits to check whether the pattern 001
 /// is present. This describes a JMP instruction
@@ -49,7 +55,7 @@ impl JmpInstruction {
             fixed_offset = offset as i16;
         }
 
-        JmpInstruction{
+        JmpInstruction {
             condition: condition,
             offset: fixed_offset,
         }
@@ -59,13 +65,13 @@ impl JmpInstruction {
         self.condition
     }
 
-   fn offset(&self) -> i16 {
-       self.offset
-   }
+    fn offset(&self) -> i16 {
+        self.offset
+    }
 }
 
-fn next_instruction<R: Read>(reader: &mut R) -> Option<JmpInstruction> {
-    let mut first_bytes :[u8; 2] = [0; 2];
+fn next_instruction<R: Read>(reader: &mut R) -> Option<Instruction> {
+    let mut first_bytes: [u8; 2] = [0; 2];
 
     match reader.read_exact(&mut first_bytes) {
         Ok(_) => {
@@ -89,23 +95,22 @@ fn next_instruction<R: Read>(reader: &mut R) -> Option<JmpInstruction> {
                     7 => JmpInstruction::new(JmpCondition::Jmp, offset),
                     _ => unreachable!(),
                 };
-                return Some(inst);
+                return Some(Instruction::JmpInstruction(inst));
             }
 
             None
-        },
+        }
         Err(_) => None,
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use super::next_instruction;
-    use crate::JmpCondition;
+    use super::*;
 
     #[test]
     fn empty_data() {
-        let data= vec![];
+        let data = vec![];
         assert_eq!(next_instruction(&mut &data[..]), None);
     }
 
@@ -113,90 +118,125 @@ mod tests {
     fn jnz() {
         let data = vec![0x00, 0x20];
         let inst = next_instruction(&mut &data[..]);
-        assert_ne!(inst, None);
-        let i = inst.unwrap();
-        assert_eq!(i.condition(), JmpCondition::Jnz);
-        assert_eq!(i.offset(), 0);
+        match inst {
+            None => panic!("no instruction returned"),
+            Some(Instruction::JmpInstruction(inst)) => {
+                assert_eq!(inst.condition(), JmpCondition::Jnz);
+                assert_eq!(inst.offset(), 0);
+            }
+            Some(inst) => panic!(format!("invalid instruction decoded: {:?}", inst)),
+        }
     }
 
     #[test]
     fn negative_jnz() {
         let data = vec![0xf9, 0x23];
         let inst = next_instruction(&mut &data[..]);
-        assert_ne!(inst, None);
-        let i = inst.unwrap();
-        assert_eq!(i.condition(), JmpCondition::Jnz);
-        assert_eq!(i.offset(), -6);
+        match inst {
+            None => panic!("no instruction returned"),
+            Some(Instruction::JmpInstruction(inst)) => {
+                assert_eq!(inst.condition(), JmpCondition::Jnz);
+                assert_eq!(inst.offset(), -6);
+            }
+            Some(inst) => panic!(format!("invalid instruction decoded: {:?}", inst)),
+        }
     }
 
     #[test]
     fn jz() {
         let data = vec![0x00, 0x24];
         let inst = next_instruction(&mut &data[..]);
-        assert_ne!(inst, None);
-        let i = inst.unwrap();
-        assert_eq!(i.condition(), JmpCondition::Jz);
-        assert_eq!(i.offset(), 0);
+        match inst {
+            None => panic!("no instruction returned"),
+            Some(Instruction::JmpInstruction(inst)) => {
+                assert_eq!(inst.condition(), JmpCondition::Jz);
+                assert_eq!(inst.offset(), 0);
+            }
+            Some(inst) => panic!(format!("invalid instruction decoded: {:?}", inst)),
+        }
     }
 
     #[test]
     fn jlo() {
         let data = vec![0x00, 0x28];
         let inst = next_instruction(&mut &data[..]);
-        assert_ne!(inst, None);
-        let i = inst.unwrap();
-        assert_eq!(i.condition(), JmpCondition::Jlo);
-        assert_eq!(i.offset(), 0);
+        match inst {
+            None => panic!("no instruction returned"),
+            Some(Instruction::JmpInstruction(inst)) => {
+                assert_eq!(inst.condition(), JmpCondition::Jlo);
+                assert_eq!(inst.offset(), 0);
+            }
+            Some(inst) => panic!(format!("invalid instruction decoded: {:?}", inst)),
+        }
     }
 
     #[test]
     fn jlc() {
         let data = vec![0x00, 0x2c];
         let inst = next_instruction(&mut &data[..]);
-        assert_ne!(inst, None);
-        let i = inst.unwrap();
-        assert_eq!(i.condition(), JmpCondition::Jc);
-        assert_eq!(i.offset(), 0);
+        match inst {
+            None => panic!("no instruction returned"),
+            Some(Instruction::JmpInstruction(inst)) => {
+                assert_eq!(inst.condition(), JmpCondition::Jc);
+                assert_eq!(inst.offset(), 0);
+            }
+            Some(inst) => panic!(format!("invalid instruction decoded: {:?}", inst)),
+        }
     }
 
     #[test]
     fn jn() {
         let data = vec![0x00, 0x30];
         let inst = next_instruction(&mut &data[..]);
-        assert_ne!(inst, None);
-        let i = inst.unwrap();
-        assert_eq!(i.condition(), JmpCondition::Jn);
-        assert_eq!(i.offset(), 0);
+        match inst {
+            None => panic!("no instruction returned"),
+            Some(Instruction::JmpInstruction(inst)) => {
+                assert_eq!(inst.condition(), JmpCondition::Jn);
+                assert_eq!(inst.offset(), 0);
+            }
+            Some(inst) => panic!(format!("invalid instruction decoded: {:?}", inst)),
+        }
     }
 
     #[test]
     fn jge() {
         let data = vec![0x00, 0x34];
         let inst = next_instruction(&mut &data[..]);
-        assert_ne!(inst, None);
-        let i = inst.unwrap();
-        assert_eq!(i.condition(), JmpCondition::Jge);
-        assert_eq!(i.offset(), 0);
+        match inst {
+            None => panic!("no instruction returned"),
+            Some(Instruction::JmpInstruction(inst)) => {
+                assert_eq!(inst.condition(), JmpCondition::Jge);
+                assert_eq!(inst.offset(), 0);
+            }
+            Some(inst) => panic!(format!("invalid instruction decoded: {:?}", inst)),
+        }
     }
 
     #[test]
     fn jl() {
         let data = vec![0x00, 0x38];
         let inst = next_instruction(&mut &data[..]);
-        assert_ne!(inst, None);
-        let i = inst.unwrap();
-        assert_eq!(i.condition(), JmpCondition::Jl);
-        assert_eq!(i.offset(), 0);
+        match inst {
+            None => panic!("no instruction returned"),
+            Some(Instruction::JmpInstruction(inst)) => {
+                assert_eq!(inst.condition(), JmpCondition::Jl);
+                assert_eq!(inst.offset(), 0);
+            }
+            Some(inst) => panic!(format!("invalid instruction decoded: {:?}", inst)),
+        }
     }
 
     #[test]
     fn jmp() {
         let data = vec![0x00, 0x3c];
         let inst = next_instruction(&mut &data[..]);
-        assert_ne!(inst, None);
-        let i = inst.unwrap();
-        assert_eq!(i.condition(), JmpCondition::Jmp);
-        assert_eq!(i.offset(), 0);
+        match inst {
+            None => panic!("no instruction returned"),
+            Some(Instruction::JmpInstruction(inst)) => {
+                assert_eq!(inst.condition(), JmpCondition::Jmp);
+                assert_eq!(inst.offset(), 0);
+            }
+            Some(inst) => panic!(format!("invalid instruction decoded: {:?}", inst)),
+        }
     }
 }
-

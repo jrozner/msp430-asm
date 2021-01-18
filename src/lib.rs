@@ -1,4 +1,4 @@
-use std::io::Read;
+use std::convert::TryInto;
 
 #[derive(Debug, Clone, PartialEq)]
 enum Instruction {
@@ -74,46 +74,45 @@ impl JmpInstruction {
     }
 }
 
-fn next_instruction<R: Read>(reader: &mut R) -> Option<Instruction> {
-    let mut first_bytes: [u8; 2] = [0; 2];
+fn decode(data: &[u8], addr: usize) -> Option<Instruction> {
+    if data.len() < (addr + 2) {
+        return None;
+    }
 
-    match reader.read_exact(&mut first_bytes) {
-        Ok(_) => {
-            let first_word = u16::from_le_bytes(first_bytes);
+    let (int_bytes, _) = data[addr..addr + 2].split_at(std::mem::size_of::<u16>());
+    // TODO: do we need to worry about the unwrap failing here?
+    let first_word = u16::from_le_bytes(int_bytes.try_into().unwrap());
 
-            let inst_type = first_word & INST_TYPE_MASK;
-            match inst_type {
-                SINGLE_OPERAND_INSTRUCTION => None,
-                JMP_INSTRUCTION => {
-                    let condition = (first_word & JMP_CONDITION_MASK) >> 10;
-                    let offset = first_word & JMP_OFFSET;
-                    // TODO: we may be able to simplify this by using C style
-                    // enums and just convert from the condition to the value
-                    // after checking that the condition is [0, 7)
-                    let inst = match condition {
-                        0 => JmpInstruction::new(JmpCondition::Jnz, offset),
-                        1 => JmpInstruction::new(JmpCondition::Jz, offset),
-                        2 => JmpInstruction::new(JmpCondition::Jlo, offset),
-                        3 => JmpInstruction::new(JmpCondition::Jc, offset),
-                        4 => JmpInstruction::new(JmpCondition::Jn, offset),
-                        5 => JmpInstruction::new(JmpCondition::Jge, offset),
-                        6 => JmpInstruction::new(JmpCondition::Jl, offset),
-                        7 => JmpInstruction::new(JmpCondition::Jmp, offset),
-                        _ => unreachable!(),
-                    };
-                    return Some(Instruction::JmpInstruction(inst));
-                }
-                _ => {
-                    // The opcode is the first four bits for this type of
-                    // instruction so there isn't a simple mask we can check.
-                    // If it doesn't match a single operand or jmp instuction
-                    // we'll fall through to here and attempt to match a two
-                    // operand. If it doesn't match any we'll return None
-                    None
-                }
-            }
+    let inst_type = first_word & INST_TYPE_MASK;
+    match inst_type {
+        SINGLE_OPERAND_INSTRUCTION => None,
+        JMP_INSTRUCTION => {
+            let condition = (first_word & JMP_CONDITION_MASK) >> 10;
+            let offset = first_word & JMP_OFFSET;
+            // TODO: we may be able to simplify this by using C style
+            // enums and just convert from the condition to the value
+            // after checking that the condition is [0, 7)
+            let inst = match condition {
+                0 => JmpInstruction::new(JmpCondition::Jnz, offset),
+                1 => JmpInstruction::new(JmpCondition::Jz, offset),
+                2 => JmpInstruction::new(JmpCondition::Jlo, offset),
+                3 => JmpInstruction::new(JmpCondition::Jc, offset),
+                4 => JmpInstruction::new(JmpCondition::Jn, offset),
+                5 => JmpInstruction::new(JmpCondition::Jge, offset),
+                6 => JmpInstruction::new(JmpCondition::Jl, offset),
+                7 => JmpInstruction::new(JmpCondition::Jmp, offset),
+                _ => unreachable!(),
+            };
+            return Some(Instruction::JmpInstruction(inst));
         }
-        Err(_) => None,
+        _ => {
+            // The opcode is the first four bits for this type of
+            // instruction so there isn't a simple mask we can check.
+            // If it doesn't match a single operand or jmp instuction
+            // we'll fall through to here and attempt to match a two
+            // operand. If it doesn't match any we'll return None
+            None
+        }
     }
 }
 
@@ -124,13 +123,13 @@ mod tests {
     #[test]
     fn empty_data() {
         let data = vec![];
-        assert_eq!(next_instruction(&mut &data[..]), None);
+        assert_eq!(decode(&data, 0), None);
     }
 
     #[test]
     fn jnz() {
         let data = vec![0x00, 0x20];
-        let inst = next_instruction(&mut &data[..]);
+        let inst = decode(&data, 0);
         match inst {
             None => panic!("no instruction returned"),
             Some(Instruction::JmpInstruction(inst)) => {
@@ -144,7 +143,7 @@ mod tests {
     #[test]
     fn negative_jnz() {
         let data = vec![0xf9, 0x23];
-        let inst = next_instruction(&mut &data[..]);
+        let inst = decode(&data, 0);
         match inst {
             None => panic!("no instruction returned"),
             Some(Instruction::JmpInstruction(inst)) => {
@@ -158,7 +157,7 @@ mod tests {
     #[test]
     fn jz() {
         let data = vec![0x00, 0x24];
-        let inst = next_instruction(&mut &data[..]);
+        let inst = decode(&data, 0);
         match inst {
             None => panic!("no instruction returned"),
             Some(Instruction::JmpInstruction(inst)) => {
@@ -172,7 +171,7 @@ mod tests {
     #[test]
     fn jlo() {
         let data = vec![0x00, 0x28];
-        let inst = next_instruction(&mut &data[..]);
+        let inst = decode(&data, 0);
         match inst {
             None => panic!("no instruction returned"),
             Some(Instruction::JmpInstruction(inst)) => {
@@ -186,7 +185,7 @@ mod tests {
     #[test]
     fn jlc() {
         let data = vec![0x00, 0x2c];
-        let inst = next_instruction(&mut &data[..]);
+        let inst = decode(&data, 0);
         match inst {
             None => panic!("no instruction returned"),
             Some(Instruction::JmpInstruction(inst)) => {
@@ -200,7 +199,7 @@ mod tests {
     #[test]
     fn jn() {
         let data = vec![0x00, 0x30];
-        let inst = next_instruction(&mut &data[..]);
+        let inst = decode(&data, 0);
         match inst {
             None => panic!("no instruction returned"),
             Some(Instruction::JmpInstruction(inst)) => {
@@ -214,7 +213,7 @@ mod tests {
     #[test]
     fn jge() {
         let data = vec![0x00, 0x34];
-        let inst = next_instruction(&mut &data[..]);
+        let inst = decode(&data, 0);
         match inst {
             None => panic!("no instruction returned"),
             Some(Instruction::JmpInstruction(inst)) => {
@@ -228,7 +227,7 @@ mod tests {
     #[test]
     fn jl() {
         let data = vec![0x00, 0x38];
-        let inst = next_instruction(&mut &data[..]);
+        let inst = decode(&data, 0);
         match inst {
             None => panic!("no instruction returned"),
             Some(Instruction::JmpInstruction(inst)) => {
@@ -242,7 +241,7 @@ mod tests {
     #[test]
     fn jmp() {
         let data = vec![0x00, 0x3c];
-        let inst = next_instruction(&mut &data[..]);
+        let inst = decode(&data, 0);
         match inst {
             None => panic!("no instruction returned"),
             Some(Instruction::JmpInstruction(inst)) => {

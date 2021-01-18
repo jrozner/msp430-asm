@@ -9,9 +9,13 @@ enum Instruction {
 #[derive(Debug, Clone, PartialEq)]
 struct SingleOperand {}
 
+const INST_TYPE_MASK: u16 = 0b1110_0000_0000_0000;
+
+const SINGLE_OPERAND_INSTRUCTION: u16 = 0b0000_0000_0000_0000;
+
 /// JMP_MASK masks off the high three bits to check whether the pattern 001
 /// is present. This describes a JMP instruction
-const JMP_MASK: u16 = 0b0010_0000_0000_0000;
+const JMP_INSTRUCTION: u16 = 0b0010_0000_0000_0000;
 
 /// JMP_CONDITION_MASK masks off the three bits used to denote the Jxx condition
 const JMP_CONDITION_MASK: u16 = 0b0001_1100_0000_0000;
@@ -77,28 +81,37 @@ fn next_instruction<R: Read>(reader: &mut R) -> Option<Instruction> {
         Ok(_) => {
             let first_word = u16::from_le_bytes(first_bytes);
 
-            if first_word & JMP_MASK == JMP_MASK {
-                // jmp instruction
-                let condition = (first_word & JMP_CONDITION_MASK) >> 10;
-                let offset = first_word & JMP_OFFSET;
-                // TODO: we may be able to simplify this by using C style
-                // enums and just convert from the condition to the value
-                // after checking that the condition is [0, 7)
-                let inst = match condition {
-                    0 => JmpInstruction::new(JmpCondition::Jnz, offset),
-                    1 => JmpInstruction::new(JmpCondition::Jz, offset),
-                    2 => JmpInstruction::new(JmpCondition::Jlo, offset),
-                    3 => JmpInstruction::new(JmpCondition::Jc, offset),
-                    4 => JmpInstruction::new(JmpCondition::Jn, offset),
-                    5 => JmpInstruction::new(JmpCondition::Jge, offset),
-                    6 => JmpInstruction::new(JmpCondition::Jl, offset),
-                    7 => JmpInstruction::new(JmpCondition::Jmp, offset),
-                    _ => unreachable!(),
-                };
-                return Some(Instruction::JmpInstruction(inst));
+            let inst_type = first_word & INST_TYPE_MASK;
+            match inst_type {
+                SINGLE_OPERAND_INSTRUCTION => None,
+                JMP_INSTRUCTION => {
+                    let condition = (first_word & JMP_CONDITION_MASK) >> 10;
+                    let offset = first_word & JMP_OFFSET;
+                    // TODO: we may be able to simplify this by using C style
+                    // enums and just convert from the condition to the value
+                    // after checking that the condition is [0, 7)
+                    let inst = match condition {
+                        0 => JmpInstruction::new(JmpCondition::Jnz, offset),
+                        1 => JmpInstruction::new(JmpCondition::Jz, offset),
+                        2 => JmpInstruction::new(JmpCondition::Jlo, offset),
+                        3 => JmpInstruction::new(JmpCondition::Jc, offset),
+                        4 => JmpInstruction::new(JmpCondition::Jn, offset),
+                        5 => JmpInstruction::new(JmpCondition::Jge, offset),
+                        6 => JmpInstruction::new(JmpCondition::Jl, offset),
+                        7 => JmpInstruction::new(JmpCondition::Jmp, offset),
+                        _ => unreachable!(),
+                    };
+                    return Some(Instruction::JmpInstruction(inst));
+                }
+                _ => {
+                    // The opcode is the first four bits for this type of
+                    // instruction so there isn't a simple mask we can check.
+                    // If it doesn't match a single operand or jmp instuction
+                    // we'll fall through to here and attempt to match a two
+                    // operand. If it doesn't match any we'll return None
+                    None
+                }
             }
-
-            None
         }
         Err(_) => None,
     }

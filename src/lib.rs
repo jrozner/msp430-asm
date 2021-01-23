@@ -124,35 +124,24 @@ fn decode(data: &[u8], addr: usize) -> Option<Instruction> {
             let source = (SINGLE_OPERAND_SOURCE_MASK & first_word) >> 4;
             let operand_width = ((SINGLE_OPERAND_WIDTH_MASK & first_word) >> 6) as u8;
 
-            // TODO: make sure addr + 4 exists
-            // need to check the addressing mode to determine if there is a second word.
-            //let (int_bytes, _) = data[addr + 2..addr + 4].split_at(std::mem::size_of::<u16>());
-            //let second_word = ones_complement(u16::from_le_bytes(int_bytes.try_into().unwrap()));
+            // TODO: make sure addr + 4 exists for instructions that have a second operand
 
             let addressing_mode = match register {
                 0 => match source {
                     0 => None, // NOTE: this is a special case for RETI which doesn't follow?
                     1 => {
-                        if operand_width > 0 {
-                            let (int_bytes, _) =
-                                data[addr + 2..addr + 4].split_at(std::mem::size_of::<u16>());
-                            let second_word =
-                                ones_complement(u16::from_le_bytes(int_bytes.try_into().unwrap()));
-                            Some(AddressingMode::Symbolic(second_word))
-                        } else {
-                            None
-                        }
+                        let (int_bytes, _) =
+                            data[addr + 2..addr + 4].split_at(std::mem::size_of::<u16>());
+                        let second_word =
+                            ones_complement(u16::from_le_bytes(int_bytes.try_into().unwrap()));
+                        Some(AddressingMode::Symbolic(second_word))
                     }
                     3 => {
-                        if operand_width > 0 {
-                            let (int_bytes, _) =
-                                data[addr + 2..addr + 4].split_at(std::mem::size_of::<u16>());
-                            let second_word =
-                                ones_complement(u16::from_le_bytes(int_bytes.try_into().unwrap()));
-                            Some(AddressingMode::Immediate(second_word))
-                        } else {
-                            None
-                        }
+                        let (int_bytes, _) =
+                            data[addr + 2..addr + 4].split_at(std::mem::size_of::<u16>());
+                        let second_word =
+                            ones_complement(u16::from_le_bytes(int_bytes.try_into().unwrap()));
+                        Some(AddressingMode::Immediate(second_word))
                     }
                     _ => panic!("invalid addressing mode"),
                 },
@@ -259,6 +248,7 @@ fn decode(data: &[u8], addr: usize) -> Option<Instruction> {
 }
 
 // TODO does it make sense to create a trait for from u16 via one's complement?
+// TODO write tests for this
 fn ones_complement(val: u16) -> i16 {
     if 0b1000_0000_0000_0000 & val > 0 {
         -1 * !val as i16
@@ -1274,6 +1264,36 @@ mod tests {
                 assert_eq!(inst.opcode, PUSH_OPCODE);
                 assert_eq!(inst.operand_width, 0);
                 assert_eq!(inst.addressing_mode, Some(AddressingMode::Constant(-1)));
+            }
+            Some(inst) => panic!(format!("invalid instruction decoded: {:?}", inst)),
+        }
+    }
+
+    #[test]
+    fn call_pc_symbolic() {
+        let data = vec![0x90, 0x12, 0x2, 0x0];
+        let inst = decode(&data, 0);
+        match inst {
+            None => panic!("no instruction returned"),
+            Some(Instruction::SingleOperand(inst)) => {
+                assert_eq!(inst.opcode, CALL_OPCODE);
+                assert_eq!(inst.operand_width, 0);
+                assert_eq!(inst.addressing_mode, Some(AddressingMode::Symbolic(2)));
+            }
+            Some(inst) => panic!(format!("invalid instruction decoded: {:?}", inst)),
+        }
+    }
+
+    #[test]
+    fn call_pc_immediate() {
+        let data = vec![0xb0, 0x12, 0x2, 0x0];
+        let inst = decode(&data, 0);
+        match inst {
+            None => panic!("no instruction returned"),
+            Some(Instruction::SingleOperand(inst)) => {
+                assert_eq!(inst.opcode, CALL_OPCODE);
+                assert_eq!(inst.operand_width, 0);
+                assert_eq!(inst.addressing_mode, Some(AddressingMode::Immediate(2)));
             }
             Some(inst) => panic!(format!("invalid instruction decoded: {:?}", inst)),
         }

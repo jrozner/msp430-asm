@@ -1,10 +1,5 @@
-pub mod addressing_mode;
-pub mod jxx;
-pub mod single_operand;
-
-pub use addressing_mode::AddressingMode;
-pub use jxx::*;
-pub use single_operand::*;
+use crate::jxx::*;
+use crate::single_operand::*;
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Instruction {

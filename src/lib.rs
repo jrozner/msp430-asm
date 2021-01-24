@@ -1,7 +1,14 @@
 use std::convert::TryInto;
 
-mod instructions;
-use instructions::*;
+pub mod addressing_mode;
+pub mod instruction;
+pub mod jxx;
+pub mod single_operand;
+
+use addressing_mode::AddressingMode;
+use instruction::Instruction;
+use jxx::*;
+use single_operand::*;
 
 const RRC_OPCODE: u16 = 0;
 const SWPB_OPCODE: u16 = 1;

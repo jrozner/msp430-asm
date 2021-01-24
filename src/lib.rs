@@ -172,13 +172,13 @@ mod tests {
 
     #[test]
     fn empty_data() {
-        let data = vec![];
+        let data = [];
         assert_eq!(decode(&data, 0), None);
     }
 
     #[test]
     fn jnz() {
-        let data = vec![0x00, 0x20];
+        let data = [0x00, 0x20];
         let inst = decode(&data, 0);
         match inst {
             None => panic!("no instruction returned"),
@@ -191,7 +191,7 @@ mod tests {
 
     #[test]
     fn negative_jnz() {
-        let data = vec![0xf9, 0x23];
+        let data = [0xf9, 0x23];
         let inst = decode(&data, 0);
         match inst {
             None => panic!("no instruction returned"),
@@ -204,7 +204,7 @@ mod tests {
 
     #[test]
     fn jz() {
-        let data = vec![0x00, 0x24];
+        let data = [0x00, 0x24];
         let inst = decode(&data, 0);
         match inst {
             None => panic!("no instruction returned"),
@@ -217,7 +217,7 @@ mod tests {
 
     #[test]
     fn jlo() {
-        let data = vec![0x00, 0x28];
+        let data = [0x00, 0x28];
         let inst = decode(&data, 0);
         match inst {
             None => panic!("no instruction returned"),
@@ -230,7 +230,7 @@ mod tests {
 
     #[test]
     fn jlc() {
-        let data = vec![0x00, 0x2c];
+        let data = [0x00, 0x2c];
         let inst = decode(&data, 0);
         match inst {
             None => panic!("no instruction returned"),
@@ -243,7 +243,7 @@ mod tests {
 
     #[test]
     fn jn() {
-        let data = vec![0x00, 0x30];
+        let data = [0x00, 0x30];
         let inst = decode(&data, 0);
         match inst {
             None => panic!("no instruction returned"),
@@ -256,7 +256,7 @@ mod tests {
 
     #[test]
     fn jge() {
-        let data = vec![0x00, 0x34];
+        let data = [0x00, 0x34];
         let inst = decode(&data, 0);
         match inst {
             None => panic!("no instruction returned"),
@@ -269,7 +269,7 @@ mod tests {
 
     #[test]
     fn jl() {
-        let data = vec![0x00, 0x38];
+        let data = [0x00, 0x38];
         let inst = decode(&data, 0);
         match inst {
             None => panic!("no instruction returned"),
@@ -282,7 +282,7 @@ mod tests {
 
     #[test]
     fn jmp() {
-        let data = vec![0x00, 0x3c];
+        let data = [0x00, 0x3c];
         let inst = decode(&data, 0);
         match inst {
             None => panic!("no instruction returned"),
@@ -295,7 +295,7 @@ mod tests {
 
     #[test]
     fn rrc_w_register_direct() {
-        let data = vec![0x09, 0x10];
+        let data = [0x09, 0x10];
         let inst = decode(&data, 0);
         match inst {
             None => panic!("no instruction returned"),
@@ -309,7 +309,7 @@ mod tests {
 
     #[test]
     fn rrc_b_register_direct() {
-        let data = vec![0x49, 0x10];
+        let data = [0x49, 0x10];
         let inst = decode(&data, 0);
         match inst {
             None => panic!("no instruction returned"),
@@ -323,7 +323,7 @@ mod tests {
 
     #[test]
     fn rrc_w_indexed_positive() {
-        let data = vec![0x19, 0x10, 0x4, 0x0];
+        let data = [0x19, 0x10, 0x4, 0x0];
         let inst = decode(&data, 0);
         match inst {
             None => panic!("no instruction returned"),
@@ -337,7 +337,7 @@ mod tests {
 
     #[test]
     fn rrc_w_indexed_negative() {
-        let data = vec![0x19, 0x10, 0xfb, 0xff];
+        let data = [0x19, 0x10, 0xfb, 0xff];
         let inst = decode(&data, 0);
         match inst {
             None => panic!("no instruction returned"),
@@ -351,7 +351,7 @@ mod tests {
 
     #[test]
     fn rrc_b_indexed_positive() {
-        let data = vec![0x59, 0x10, 0x04, 0x00];
+        let data = [0x59, 0x10, 0x04, 0x00];
         let inst = decode(&data, 0);
         match inst {
             None => panic!("no instruction returned"),
@@ -365,7 +365,7 @@ mod tests {
 
     #[test]
     fn rrc_b_indexed_negative() {
-        let data = vec![0x59, 0x10, 0xfb, 0xff];
+        let data = [0x59, 0x10, 0xfb, 0xff];
         let inst = decode(&data, 0);
         match inst {
             None => panic!("no instruction returned"),
@@ -379,7 +379,7 @@ mod tests {
 
     #[test]
     fn rrc_w_register_indirect() {
-        let data = vec![0x29, 0x10];
+        let data = [0x29, 0x10];
         let inst = decode(&data, 0);
         match inst {
             None => panic!("no instruction returned"),
@@ -393,7 +393,7 @@ mod tests {
 
     #[test]
     fn rrc_b_register_indirect() {
-        let data = vec![0x69, 0x10];
+        let data = [0x69, 0x10];
         let inst = decode(&data, 0);
         match inst {
             None => panic!("no instruction returned"),
@@ -407,7 +407,7 @@ mod tests {
 
     #[test]
     fn rrc_w_register_indirect_autoincrement() {
-        let data = vec![0x39, 0x10];
+        let data = [0x39, 0x10];
         let inst = decode(&data, 0);
         match inst {
             None => panic!("no instruction returned"),
@@ -424,7 +424,7 @@ mod tests {
 
     #[test]
     fn rrc_b_register_indirect_autoincrement() {
-        let data = vec![0x79, 0x10];
+        let data = [0x79, 0x10];
         let inst = decode(&data, 0);
         match inst {
             None => panic!("no instruction returned"),
@@ -441,7 +441,7 @@ mod tests {
 
     #[test]
     fn swpb_register_direct() {
-        let data = vec![0x89, 0x10];
+        let data = [0x89, 0x10];
         let inst = decode(&data, 0);
         match inst {
             None => panic!("no instruction returned"),
@@ -454,7 +454,7 @@ mod tests {
 
     #[test]
     fn swpb_register_indexed_positive() {
-        let data = vec![0x99, 0x10, 0x04, 0x00];
+        let data = [0x99, 0x10, 0x04, 0x00];
         let inst = decode(&data, 0);
         match inst {
             None => panic!("no instruction returned"),
@@ -467,7 +467,7 @@ mod tests {
 
     #[test]
     fn swpb_register_indexed_negative() {
-        let data = vec![0x99, 0x10, 0xfb, 0xff];
+        let data = [0x99, 0x10, 0xfb, 0xff];
         let inst = decode(&data, 0);
         match inst {
             None => panic!("no instruction returned"),
@@ -480,7 +480,7 @@ mod tests {
 
     #[test]
     fn swpb_register_indirect() {
-        let data = vec![0xa9, 0x10];
+        let data = [0xa9, 0x10];
         let inst = decode(&data, 0);
         match inst {
             None => panic!("no instruction returned"),
@@ -493,7 +493,7 @@ mod tests {
 
     #[test]
     fn swpb_register_indirect_autoincrement() {
-        let data = vec![0xb9, 0x10];
+        let data = [0xb9, 0x10];
         let inst = decode(&data, 0);
         match inst {
             None => panic!("no instruction returned"),
@@ -509,7 +509,7 @@ mod tests {
 
     #[test]
     fn rra_w_register_direct() {
-        let data = vec![0x09, 0x11];
+        let data = [0x09, 0x11];
         let inst = decode(&data, 0);
         match inst {
             None => panic!("no instruction returned"),
@@ -523,7 +523,7 @@ mod tests {
 
     #[test]
     fn rra_b_register_direct() {
-        let data = vec![0x49, 0x11];
+        let data = [0x49, 0x11];
         let inst = decode(&data, 0);
         match inst {
             None => panic!("no instruction returned"),
@@ -537,7 +537,7 @@ mod tests {
 
     #[test]
     fn rra_w_indexed_positive() {
-        let data = vec![0x19, 0x11, 0x4, 0x0];
+        let data = [0x19, 0x11, 0x4, 0x0];
         let inst = decode(&data, 0);
         match inst {
             None => panic!("no instruction returned"),
@@ -551,7 +551,7 @@ mod tests {
 
     #[test]
     fn rra_w_indexed_negative() {
-        let data = vec![0x19, 0x11, 0xfb, 0xff];
+        let data = [0x19, 0x11, 0xfb, 0xff];
         let inst = decode(&data, 0);
         match inst {
             None => panic!("no instruction returned"),
@@ -565,7 +565,7 @@ mod tests {
 
     #[test]
     fn rra_b_indexed_positive() {
-        let data = vec![0x59, 0x11, 0x04, 0x00];
+        let data = [0x59, 0x11, 0x04, 0x00];
         let inst = decode(&data, 0);
         match inst {
             None => panic!("no instruction returned"),
@@ -579,7 +579,7 @@ mod tests {
 
     #[test]
     fn rra_b_indexed_negative() {
-        let data = vec![0x59, 0x11, 0xfb, 0xff];
+        let data = [0x59, 0x11, 0xfb, 0xff];
         let inst = decode(&data, 0);
         match inst {
             None => panic!("no instruction returned"),
@@ -593,7 +593,7 @@ mod tests {
 
     #[test]
     fn rra_w_register_indirect() {
-        let data = vec![0x29, 0x11];
+        let data = [0x29, 0x11];
         let inst = decode(&data, 0);
         match inst {
             None => panic!("no instruction returned"),
@@ -607,7 +607,7 @@ mod tests {
 
     #[test]
     fn rra_b_register_indirect() {
-        let data = vec![0x69, 0x11];
+        let data = [0x69, 0x11];
         let inst = decode(&data, 0);
         match inst {
             None => panic!("no instruction returned"),
@@ -621,7 +621,7 @@ mod tests {
 
     #[test]
     fn rra_w_register_indirect_autoincrement() {
-        let data = vec![0x39, 0x11];
+        let data = [0x39, 0x11];
         let inst = decode(&data, 0);
         match inst {
             None => panic!("no instruction returned"),
@@ -638,7 +638,7 @@ mod tests {
 
     #[test]
     fn rra_b_register_indirect_autoincrement() {
-        let data = vec![0x79, 0x11];
+        let data = [0x79, 0x11];
         let inst = decode(&data, 0);
         match inst {
             None => panic!("no instruction returned"),
@@ -655,7 +655,7 @@ mod tests {
 
     #[test]
     fn sxt_register_direct() {
-        let data = vec![0x89, 0x11];
+        let data = [0x89, 0x11];
         let inst = decode(&data, 0);
         match inst {
             None => panic!("no instruction returned"),
@@ -668,7 +668,7 @@ mod tests {
 
     #[test]
     fn sxt_register_indexed_positive() {
-        let data = vec![0x99, 0x11, 0x04, 0x00];
+        let data = [0x99, 0x11, 0x04, 0x00];
         let inst = decode(&data, 0);
         match inst {
             None => panic!("no instruction returned"),
@@ -681,7 +681,7 @@ mod tests {
 
     #[test]
     fn sxt_register_indexed_negative() {
-        let data = vec![0x99, 0x11, 0xfb, 0xff];
+        let data = [0x99, 0x11, 0xfb, 0xff];
         let inst = decode(&data, 0);
         match inst {
             None => panic!("no instruction returned"),
@@ -694,7 +694,7 @@ mod tests {
 
     #[test]
     fn sxt_register_indirect() {
-        let data = vec![0xa9, 0x11];
+        let data = [0xa9, 0x11];
         let inst = decode(&data, 0);
         match inst {
             None => panic!("no instruction returned"),
@@ -707,7 +707,7 @@ mod tests {
 
     #[test]
     fn sxt_register_indirect_autoincrement() {
-        let data = vec![0xb9, 0x11];
+        let data = [0xb9, 0x11];
         let inst = decode(&data, 0);
         match inst {
             None => panic!("no instruction returned"),
@@ -723,7 +723,7 @@ mod tests {
 
     #[test]
     fn push_w_register_direct() {
-        let data = vec![0x09, 0x12];
+        let data = [0x09, 0x12];
         let inst = decode(&data, 0);
         match inst {
             None => panic!("no instruction returned"),
@@ -737,7 +737,7 @@ mod tests {
 
     #[test]
     fn push_b_register_direct() {
-        let data = vec![0x49, 0x12];
+        let data = [0x49, 0x12];
         let inst = decode(&data, 0);
         match inst {
             None => panic!("no instruction returned"),
@@ -751,7 +751,7 @@ mod tests {
 
     #[test]
     fn push_w_indexed_positive() {
-        let data = vec![0x19, 0x12, 0x4, 0x0];
+        let data = [0x19, 0x12, 0x4, 0x0];
         let inst = decode(&data, 0);
         match inst {
             None => panic!("no instruction returned"),
@@ -765,7 +765,7 @@ mod tests {
 
     #[test]
     fn push_w_indexed_negative() {
-        let data = vec![0x19, 0x12, 0xfb, 0xff];
+        let data = [0x19, 0x12, 0xfb, 0xff];
         let inst = decode(&data, 0);
         match inst {
             None => panic!("no instruction returned"),
@@ -779,7 +779,7 @@ mod tests {
 
     #[test]
     fn push_b_indexed_positive() {
-        let data = vec![0x59, 0x12, 0x04, 0x00];
+        let data = [0x59, 0x12, 0x04, 0x00];
         let inst = decode(&data, 0);
         match inst {
             None => panic!("no instruction returned"),
@@ -793,7 +793,7 @@ mod tests {
 
     #[test]
     fn push_b_indexed_negative() {
-        let data = vec![0x59, 0x12, 0xfb, 0xff];
+        let data = [0x59, 0x12, 0xfb, 0xff];
         let inst = decode(&data, 0);
         match inst {
             None => panic!("no instruction returned"),
@@ -807,7 +807,7 @@ mod tests {
 
     #[test]
     fn push_w_register_indirect() {
-        let data = vec![0x29, 0x12];
+        let data = [0x29, 0x12];
         let inst = decode(&data, 0);
         match inst {
             None => panic!("no instruction returned"),
@@ -821,7 +821,7 @@ mod tests {
 
     #[test]
     fn push_b_register_indirect() {
-        let data = vec![0x69, 0x12];
+        let data = [0x69, 0x12];
         let inst = decode(&data, 0);
         match inst {
             None => panic!("no instruction returned"),
@@ -835,7 +835,7 @@ mod tests {
 
     #[test]
     fn push_w_register_indirect_autoincrement() {
-        let data = vec![0x39, 0x12];
+        let data = [0x39, 0x12];
         let inst = decode(&data, 0);
         match inst {
             None => panic!("no instruction returned"),
@@ -852,7 +852,7 @@ mod tests {
 
     #[test]
     fn push_b_register_indirect_autoincrement() {
-        let data = vec![0x79, 0x12];
+        let data = [0x79, 0x12];
         let inst = decode(&data, 0);
         match inst {
             None => panic!("no instruction returned"),
@@ -869,7 +869,7 @@ mod tests {
 
     #[test]
     fn call_register_direct() {
-        let data = vec![0x89, 0x12];
+        let data = [0x89, 0x12];
         let inst = decode(&data, 0);
         match inst {
             None => panic!("no instruction returned"),
@@ -882,7 +882,7 @@ mod tests {
 
     #[test]
     fn call_register_indexed_positive() {
-        let data = vec![0x99, 0x12, 0x04, 0x00];
+        let data = [0x99, 0x12, 0x04, 0x00];
         let inst = decode(&data, 0);
         match inst {
             None => panic!("no instruction returned"),
@@ -895,7 +895,7 @@ mod tests {
 
     #[test]
     fn call_register_indexed_negative() {
-        let data = vec![0x99, 0x12, 0xfb, 0xff];
+        let data = [0x99, 0x12, 0xfb, 0xff];
         let inst = decode(&data, 0);
         match inst {
             None => panic!("no instruction returned"),
@@ -908,7 +908,7 @@ mod tests {
 
     #[test]
     fn call_register_indirect() {
-        let data = vec![0xa9, 0x12];
+        let data = [0xa9, 0x12];
         let inst = decode(&data, 0);
         match inst {
             None => panic!("no instruction returned"),
@@ -921,7 +921,7 @@ mod tests {
 
     #[test]
     fn call_register_indirect_autoincrement() {
-        let data = vec![0xb9, 0x12];
+        let data = [0xb9, 0x12];
         let inst = decode(&data, 0);
         match inst {
             None => panic!("no instruction returned"),
@@ -937,7 +937,7 @@ mod tests {
 
     #[test]
     fn reti() {
-        let data = vec![0x00, 0x13];
+        let data = [0x00, 0x13];
         let inst = decode(&data, 0);
         match inst {
             None => panic!("no instruction returned"),
@@ -950,7 +950,7 @@ mod tests {
 
     #[test]
     fn push_const_sr_one() {
-        let data = vec![0x12, 0x12, 0x0, 0x44];
+        let data = [0x12, 0x12, 0x0, 0x44];
         let inst = decode(&data, 0);
         match inst {
             None => panic!("no instruction returned"),
@@ -964,7 +964,7 @@ mod tests {
 
     #[test]
     fn push_const_sr_two() {
-        let data = vec![0x22, 0x12];
+        let data = [0x22, 0x12];
         let inst = decode(&data, 0);
         match inst {
             None => panic!("no instruction returned"),
@@ -978,7 +978,7 @@ mod tests {
 
     #[test]
     fn push_const_sr_three() {
-        let data = vec![0x32, 0x12];
+        let data = [0x32, 0x12];
         let inst = decode(&data, 0);
         match inst {
             None => panic!("no instruction returned"),
@@ -992,7 +992,7 @@ mod tests {
 
     #[test]
     fn push_const_cg_zero() {
-        let data = vec![0x03, 0x12];
+        let data = [0x03, 0x12];
         let inst = decode(&data, 0);
         match inst {
             None => panic!("no instruction returned"),
@@ -1006,7 +1006,7 @@ mod tests {
 
     #[test]
     fn push_const_cg_one() {
-        let data = vec![0x13, 0x12];
+        let data = [0x13, 0x12];
         let inst = decode(&data, 0);
         match inst {
             None => panic!("no instruction returned"),
@@ -1020,7 +1020,7 @@ mod tests {
 
     #[test]
     fn push_const_cg_two() {
-        let data = vec![0x23, 0x12];
+        let data = [0x23, 0x12];
         let inst = decode(&data, 0);
         match inst {
             None => panic!("no instruction returned"),
@@ -1034,7 +1034,7 @@ mod tests {
 
     #[test]
     fn push_const_cg_three() {
-        let data = vec![0x33, 0x12];
+        let data = [0x33, 0x12];
         let inst = decode(&data, 0);
         match inst {
             None => panic!("no instruction returned"),
@@ -1048,7 +1048,7 @@ mod tests {
 
     #[test]
     fn call_pc_symbolic() {
-        let data = vec![0x90, 0x12, 0x2, 0x0];
+        let data = [0x90, 0x12, 0x2, 0x0];
         let inst = decode(&data, 0);
         match inst {
             None => panic!("no instruction returned"),
@@ -1061,7 +1061,7 @@ mod tests {
 
     #[test]
     fn call_pc_immediate() {
-        let data = vec![0xb0, 0x12, 0x2, 0x0];
+        let data = [0xb0, 0x12, 0x2, 0x0];
         let inst = decode(&data, 0);
         match inst {
             None => panic!("no instruction returned"),

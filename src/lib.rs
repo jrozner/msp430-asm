@@ -1,30 +1,7 @@
 use std::convert::TryInto;
 
-#[derive(Debug, Clone, PartialEq)]
-enum Instruction {
-    JmpInstruction(JmpInstruction),
-    SingleOperand(SingleOperand),
-}
-
-#[derive(Debug, Clone, PartialEq)]
-enum AddressingMode {
-    RegisterDirect(u8),
-    // maybe we should just pass the operand in the instruction itself?
-    Indexed((u8, i16)),
-    RegisterIndirect(u8),
-    IndirectAutoIncrement(u8),
-    Symbolic(i16),
-    Immediate(i16),
-    Absolute(u16),
-    Constant(i8),
-}
-
-#[derive(Debug, Clone, PartialEq)]
-struct SingleOperand {
-    opcode: u16,
-    operand_width: u8,
-    addressing_mode: Option<AddressingMode>,
-}
+mod instructions;
+use instructions::*;
 
 const RRC_OPCODE: u16 = 0;
 const SWPB_OPCODE: u16 = 1;
@@ -57,55 +34,6 @@ const JMP_CONDITION_MASK: u16 = 0b0001_1100_0000_0000;
 /// This can be a negative offset and it represented as such in one's
 /// compliment
 const JMP_OFFSET: u16 = 0b0000001111111111;
-
-///JmpCondition describes the condition for a Jxx instruction
-#[derive(Debug, Clone, Copy, PartialEq)]
-enum JmpCondition {
-    Jnz,
-    Jz,
-    Jlo,
-    Jc,
-    Jn,
-    Jge,
-    Jl,
-    Jmp,
-}
-
-#[derive(Debug, Clone, Copy, PartialEq)]
-struct JmpInstruction {
-    /// the condition to determine if the jump should happen
-    condition: JmpCondition,
-
-    /// the number of words (16 bits) to jump forward or backward
-    offset: i16,
-}
-
-impl JmpInstruction {
-    fn new(condition: JmpCondition, offset: u16) -> JmpInstruction {
-        let fixed_offset: i16;
-        // msp430 uses one's compliment so we need to do some bit magic to
-        // figure out if we have a negative offset and if so convert it into
-        // the actual negative number that it is representing
-        if offset & 0b10_0000_0000 > 0 {
-            fixed_offset = -1 * (0b0000_0011_1111_1111 & !offset) as i16;
-        } else {
-            fixed_offset = offset as i16;
-        }
-
-        JmpInstruction {
-            condition: condition,
-            offset: fixed_offset,
-        }
-    }
-
-    fn condition(&self) -> JmpCondition {
-        self.condition
-    }
-
-    fn offset(&self) -> i16 {
-        self.offset
-    }
-}
 
 fn decode(data: &[u8], addr: usize) -> Option<Instruction> {
     if data.len() < (addr + 2) {
@@ -179,62 +107,43 @@ fn decode(data: &[u8], addr: usize) -> Option<Instruction> {
             };
 
             match opcode {
-                RRC_OPCODE => Some(Instruction::SingleOperand(SingleOperand {
-                    opcode: RRC_OPCODE,
-                    addressing_mode: addressing_mode,
-                    operand_width: operand_width,
-                })),
-                SWPB_OPCODE => Some(Instruction::SingleOperand(SingleOperand {
-                    opcode: SWPB_OPCODE,
-                    addressing_mode: addressing_mode,
-                    operand_width: operand_width,
-                })),
-                RRA_OPCODE => Some(Instruction::SingleOperand(SingleOperand {
-                    opcode: RRA_OPCODE,
-                    addressing_mode: addressing_mode,
-                    operand_width: operand_width,
-                })),
-                SXT_OPCODE => Some(Instruction::SingleOperand(SingleOperand {
-                    opcode: SXT_OPCODE,
-                    addressing_mode: addressing_mode,
-                    operand_width: operand_width,
-                })),
-                PUSH_OPCODE => Some(Instruction::SingleOperand(SingleOperand {
-                    opcode: PUSH_OPCODE,
-                    addressing_mode: addressing_mode,
-                    operand_width: operand_width,
-                })),
-                CALL_OPCODE => Some(Instruction::SingleOperand(SingleOperand {
-                    opcode: CALL_OPCODE,
-                    addressing_mode: addressing_mode,
-                    operand_width: operand_width,
-                })),
-                RETI_OPCODE => Some(Instruction::SingleOperand(SingleOperand {
-                    opcode: RETI_OPCODE,
-                    addressing_mode: addressing_mode,
-                    operand_width: operand_width,
-                })),
+                RRC_OPCODE => Some(Instruction::Rrc(Rrc::new(
+                    addressing_mode.unwrap(),
+                    operand_width,
+                ))),
+                SWPB_OPCODE => Some(Instruction::Swpb(Swpb::new(addressing_mode.unwrap()))),
+                RRA_OPCODE => Some(Instruction::Rra(Rra::new(
+                    addressing_mode.unwrap(),
+                    operand_width,
+                ))),
+                SXT_OPCODE => Some(Instruction::Sxt(Sxt::new(addressing_mode.unwrap()))),
+                PUSH_OPCODE => Some(Instruction::Push(Push::new(
+                    addressing_mode.unwrap(),
+                    operand_width,
+                ))),
+                CALL_OPCODE => Some(Instruction::Call(Call::new(addressing_mode.unwrap()))),
+                RETI_OPCODE => Some(Instruction::Reti(Reti::new())),
                 _ => None,
             }
         }
         JMP_INSTRUCTION => {
             let condition = (first_word & JMP_CONDITION_MASK) >> 10;
-            let offset = first_word & JMP_OFFSET;
+            let offset = jxx_fix_offset(first_word & JMP_OFFSET);
             // TODO: we may be able to simplify this by using C style
             // enums and just convert from the condition to the value
             // after checking that the condition is [0, 7)
             let inst = match condition {
-                0 => JmpInstruction::new(JmpCondition::Jnz, offset),
-                1 => JmpInstruction::new(JmpCondition::Jz, offset),
-                2 => JmpInstruction::new(JmpCondition::Jlo, offset),
-                3 => JmpInstruction::new(JmpCondition::Jc, offset),
-                4 => JmpInstruction::new(JmpCondition::Jn, offset),
-                5 => JmpInstruction::new(JmpCondition::Jge, offset),
-                6 => JmpInstruction::new(JmpCondition::Jl, offset),
-                7 => JmpInstruction::new(JmpCondition::Jmp, offset),
+                0 => Instruction::Jnz(Jnz::new(offset)),
+                1 => Instruction::Jz(Jz::new(offset)),
+                2 => Instruction::Jlo(Jlo::new(offset)),
+                3 => Instruction::Jc(Jc::new(offset)),
+                4 => Instruction::Jn(Jn::new(offset)),
+                5 => Instruction::Jge(Jge::new(offset)),
+                6 => Instruction::Jl(Jl::new(offset)),
+                7 => Instruction::Jmp(Jmp::new(offset)),
                 _ => unreachable!(),
             };
-            return Some(Instruction::JmpInstruction(inst));
+            Some(inst)
         }
         _ => {
             // The opcode is the first four bits for this type of
@@ -273,8 +182,7 @@ mod tests {
         let inst = decode(&data, 0);
         match inst {
             None => panic!("no instruction returned"),
-            Some(Instruction::JmpInstruction(inst)) => {
-                assert_eq!(inst.condition(), JmpCondition::Jnz);
+            Some(Instruction::Jnz(inst)) => {
                 assert_eq!(inst.offset(), 0);
             }
             Some(inst) => panic!(format!("invalid instruction decoded: {:?}", inst)),
@@ -287,8 +195,7 @@ mod tests {
         let inst = decode(&data, 0);
         match inst {
             None => panic!("no instruction returned"),
-            Some(Instruction::JmpInstruction(inst)) => {
-                assert_eq!(inst.condition(), JmpCondition::Jnz);
+            Some(Instruction::Jnz(inst)) => {
                 assert_eq!(inst.offset(), -6);
             }
             Some(inst) => panic!(format!("invalid instruction decoded: {:?}", inst)),
@@ -301,8 +208,7 @@ mod tests {
         let inst = decode(&data, 0);
         match inst {
             None => panic!("no instruction returned"),
-            Some(Instruction::JmpInstruction(inst)) => {
-                assert_eq!(inst.condition(), JmpCondition::Jz);
+            Some(Instruction::Jz(inst)) => {
                 assert_eq!(inst.offset(), 0);
             }
             Some(inst) => panic!(format!("invalid instruction decoded: {:?}", inst)),
@@ -315,8 +221,7 @@ mod tests {
         let inst = decode(&data, 0);
         match inst {
             None => panic!("no instruction returned"),
-            Some(Instruction::JmpInstruction(inst)) => {
-                assert_eq!(inst.condition(), JmpCondition::Jlo);
+            Some(Instruction::Jlo(inst)) => {
                 assert_eq!(inst.offset(), 0);
             }
             Some(inst) => panic!(format!("invalid instruction decoded: {:?}", inst)),
@@ -329,8 +234,7 @@ mod tests {
         let inst = decode(&data, 0);
         match inst {
             None => panic!("no instruction returned"),
-            Some(Instruction::JmpInstruction(inst)) => {
-                assert_eq!(inst.condition(), JmpCondition::Jc);
+            Some(Instruction::Jc(inst)) => {
                 assert_eq!(inst.offset(), 0);
             }
             Some(inst) => panic!(format!("invalid instruction decoded: {:?}", inst)),
@@ -343,8 +247,7 @@ mod tests {
         let inst = decode(&data, 0);
         match inst {
             None => panic!("no instruction returned"),
-            Some(Instruction::JmpInstruction(inst)) => {
-                assert_eq!(inst.condition(), JmpCondition::Jn);
+            Some(Instruction::Jn(inst)) => {
                 assert_eq!(inst.offset(), 0);
             }
             Some(inst) => panic!(format!("invalid instruction decoded: {:?}", inst)),
@@ -357,8 +260,7 @@ mod tests {
         let inst = decode(&data, 0);
         match inst {
             None => panic!("no instruction returned"),
-            Some(Instruction::JmpInstruction(inst)) => {
-                assert_eq!(inst.condition(), JmpCondition::Jge);
+            Some(Instruction::Jge(inst)) => {
                 assert_eq!(inst.offset(), 0);
             }
             Some(inst) => panic!(format!("invalid instruction decoded: {:?}", inst)),
@@ -371,8 +273,7 @@ mod tests {
         let inst = decode(&data, 0);
         match inst {
             None => panic!("no instruction returned"),
-            Some(Instruction::JmpInstruction(inst)) => {
-                assert_eq!(inst.condition(), JmpCondition::Jl);
+            Some(Instruction::Jl(inst)) => {
                 assert_eq!(inst.offset(), 0);
             }
             Some(inst) => panic!(format!("invalid instruction decoded: {:?}", inst)),
@@ -385,8 +286,7 @@ mod tests {
         let inst = decode(&data, 0);
         match inst {
             None => panic!("no instruction returned"),
-            Some(Instruction::JmpInstruction(inst)) => {
-                assert_eq!(inst.condition(), JmpCondition::Jmp);
+            Some(Instruction::Jmp(inst)) => {
                 assert_eq!(inst.offset(), 0);
             }
             Some(inst) => panic!(format!("invalid instruction decoded: {:?}", inst)),
@@ -399,13 +299,9 @@ mod tests {
         let inst = decode(&data, 0);
         match inst {
             None => panic!("no instruction returned"),
-            Some(Instruction::SingleOperand(inst)) => {
-                assert_eq!(inst.opcode, RRC_OPCODE);
-                assert_eq!(inst.operand_width, 0);
-                assert_eq!(
-                    inst.addressing_mode,
-                    Some(AddressingMode::RegisterDirect(9))
-                );
+            Some(Instruction::Rrc(inst)) => {
+                assert_eq!(inst.operand_width(), 0);
+                assert_eq!(inst.addressing_mode(), &AddressingMode::RegisterDirect(9));
             }
             Some(inst) => panic!(format!("invalid instruction decoded: {:?}", inst)),
         }
@@ -417,13 +313,9 @@ mod tests {
         let inst = decode(&data, 0);
         match inst {
             None => panic!("no instruction returned"),
-            Some(Instruction::SingleOperand(inst)) => {
-                assert_eq!(inst.opcode, RRC_OPCODE);
-                assert_eq!(inst.operand_width, 1);
-                assert_eq!(
-                    inst.addressing_mode,
-                    Some(AddressingMode::RegisterDirect(9))
-                );
+            Some(Instruction::Rrc(inst)) => {
+                assert_eq!(inst.operand_width(), 1);
+                assert_eq!(inst.addressing_mode(), &AddressingMode::RegisterDirect(9));
             }
             Some(inst) => panic!(format!("invalid instruction decoded: {:?}", inst)),
         }
@@ -435,10 +327,9 @@ mod tests {
         let inst = decode(&data, 0);
         match inst {
             None => panic!("no instruction returned"),
-            Some(Instruction::SingleOperand(inst)) => {
-                assert_eq!(inst.opcode, RRC_OPCODE);
-                assert_eq!(inst.operand_width, 0);
-                assert_eq!(inst.addressing_mode, Some(AddressingMode::Indexed((9, 4))));
+            Some(Instruction::Rrc(inst)) => {
+                assert_eq!(inst.operand_width(), 0);
+                assert_eq!(inst.addressing_mode(), &AddressingMode::Indexed((9, 4)));
             }
             Some(inst) => panic!(format!("invalid instruction decoded: {:?}", inst)),
         }
@@ -450,10 +341,9 @@ mod tests {
         let inst = decode(&data, 0);
         match inst {
             None => panic!("no instruction returned"),
-            Some(Instruction::SingleOperand(inst)) => {
-                assert_eq!(inst.opcode, RRC_OPCODE);
-                assert_eq!(inst.operand_width, 0);
-                assert_eq!(inst.addressing_mode, Some(AddressingMode::Indexed((9, -4))));
+            Some(Instruction::Rrc(inst)) => {
+                assert_eq!(inst.operand_width(), 0);
+                assert_eq!(inst.addressing_mode(), &AddressingMode::Indexed((9, -4)));
             }
             Some(inst) => panic!(format!("invalid instruction decoded: {:?}", inst)),
         }
@@ -465,10 +355,9 @@ mod tests {
         let inst = decode(&data, 0);
         match inst {
             None => panic!("no instruction returned"),
-            Some(Instruction::SingleOperand(inst)) => {
-                assert_eq!(inst.opcode, RRC_OPCODE);
-                assert_eq!(inst.operand_width, 1);
-                assert_eq!(inst.addressing_mode, Some(AddressingMode::Indexed((9, 4))));
+            Some(Instruction::Rrc(inst)) => {
+                assert_eq!(inst.operand_width(), 1);
+                assert_eq!(inst.addressing_mode(), &AddressingMode::Indexed((9, 4)));
             }
             Some(inst) => panic!(format!("invalid instruction decoded: {:?}", inst)),
         }
@@ -480,10 +369,9 @@ mod tests {
         let inst = decode(&data, 0);
         match inst {
             None => panic!("no instruction returned"),
-            Some(Instruction::SingleOperand(inst)) => {
-                assert_eq!(inst.opcode, RRC_OPCODE);
-                assert_eq!(inst.operand_width, 1);
-                assert_eq!(inst.addressing_mode, Some(AddressingMode::Indexed((9, -4))));
+            Some(Instruction::Rrc(inst)) => {
+                assert_eq!(inst.operand_width(), 1);
+                assert_eq!(inst.addressing_mode(), &AddressingMode::Indexed((9, -4)));
             }
             Some(inst) => panic!(format!("invalid instruction decoded: {:?}", inst)),
         }
@@ -495,13 +383,9 @@ mod tests {
         let inst = decode(&data, 0);
         match inst {
             None => panic!("no instruction returned"),
-            Some(Instruction::SingleOperand(inst)) => {
-                assert_eq!(inst.opcode, RRC_OPCODE);
-                assert_eq!(inst.operand_width, 0);
-                assert_eq!(
-                    inst.addressing_mode,
-                    Some(AddressingMode::RegisterIndirect(9))
-                );
+            Some(Instruction::Rrc(inst)) => {
+                assert_eq!(inst.operand_width(), 0);
+                assert_eq!(inst.addressing_mode(), &AddressingMode::RegisterIndirect(9));
             }
             Some(inst) => panic!(format!("invalid instruction decoded: {:?}", inst)),
         }
@@ -513,13 +397,9 @@ mod tests {
         let inst = decode(&data, 0);
         match inst {
             None => panic!("no instruction returned"),
-            Some(Instruction::SingleOperand(inst)) => {
-                assert_eq!(inst.opcode, RRC_OPCODE);
-                assert_eq!(inst.operand_width, 1);
-                assert_eq!(
-                    inst.addressing_mode,
-                    Some(AddressingMode::RegisterIndirect(9))
-                );
+            Some(Instruction::Rrc(inst)) => {
+                assert_eq!(inst.operand_width(), 1);
+                assert_eq!(inst.addressing_mode(), &AddressingMode::RegisterIndirect(9));
             }
             Some(inst) => panic!(format!("invalid instruction decoded: {:?}", inst)),
         }
@@ -531,12 +411,11 @@ mod tests {
         let inst = decode(&data, 0);
         match inst {
             None => panic!("no instruction returned"),
-            Some(Instruction::SingleOperand(inst)) => {
-                assert_eq!(inst.opcode, RRC_OPCODE);
-                assert_eq!(inst.operand_width, 0);
+            Some(Instruction::Rrc(inst)) => {
+                assert_eq!(inst.operand_width(), 0);
                 assert_eq!(
-                    inst.addressing_mode,
-                    Some(AddressingMode::IndirectAutoIncrement(9))
+                    inst.addressing_mode(),
+                    &AddressingMode::IndirectAutoIncrement(9)
                 );
             }
             Some(inst) => panic!(format!("invalid instruction decoded: {:?}", inst)),
@@ -549,12 +428,11 @@ mod tests {
         let inst = decode(&data, 0);
         match inst {
             None => panic!("no instruction returned"),
-            Some(Instruction::SingleOperand(inst)) => {
-                assert_eq!(inst.opcode, RRC_OPCODE);
-                assert_eq!(inst.operand_width, 1);
+            Some(Instruction::Rrc(inst)) => {
+                assert_eq!(inst.operand_width(), 1);
                 assert_eq!(
-                    inst.addressing_mode,
-                    Some(AddressingMode::IndirectAutoIncrement(9))
+                    inst.addressing_mode(),
+                    &AddressingMode::IndirectAutoIncrement(9)
                 );
             }
             Some(inst) => panic!(format!("invalid instruction decoded: {:?}", inst)),
@@ -567,13 +445,8 @@ mod tests {
         let inst = decode(&data, 0);
         match inst {
             None => panic!("no instruction returned"),
-            Some(Instruction::SingleOperand(inst)) => {
-                assert_eq!(inst.opcode, SWPB_OPCODE);
-                assert_eq!(inst.operand_width, 0);
-                assert_eq!(
-                    inst.addressing_mode,
-                    Some(AddressingMode::RegisterDirect(9))
-                );
+            Some(Instruction::Swpb(inst)) => {
+                assert_eq!(inst.addressing_mode(), &AddressingMode::RegisterDirect(9));
             }
             Some(inst) => panic!(format!("invalid instruction decoded: {:?}", inst)),
         }
@@ -585,10 +458,8 @@ mod tests {
         let inst = decode(&data, 0);
         match inst {
             None => panic!("no instruction returned"),
-            Some(Instruction::SingleOperand(inst)) => {
-                assert_eq!(inst.opcode, SWPB_OPCODE);
-                assert_eq!(inst.operand_width, 0);
-                assert_eq!(inst.addressing_mode, Some(AddressingMode::Indexed((9, 4))));
+            Some(Instruction::Swpb(inst)) => {
+                assert_eq!(inst.addressing_mode(), &AddressingMode::Indexed((9, 4)));
             }
             Some(inst) => panic!(format!("invalid instruction decoded: {:?}", inst)),
         }
@@ -600,10 +471,8 @@ mod tests {
         let inst = decode(&data, 0);
         match inst {
             None => panic!("no instruction returned"),
-            Some(Instruction::SingleOperand(inst)) => {
-                assert_eq!(inst.opcode, SWPB_OPCODE);
-                assert_eq!(inst.operand_width, 0);
-                assert_eq!(inst.addressing_mode, Some(AddressingMode::Indexed((9, -4))));
+            Some(Instruction::Swpb(inst)) => {
+                assert_eq!(inst.addressing_mode(), &AddressingMode::Indexed((9, -4)));
             }
             Some(inst) => panic!(format!("invalid instruction decoded: {:?}", inst)),
         }
@@ -615,13 +484,8 @@ mod tests {
         let inst = decode(&data, 0);
         match inst {
             None => panic!("no instruction returned"),
-            Some(Instruction::SingleOperand(inst)) => {
-                assert_eq!(inst.opcode, SWPB_OPCODE);
-                assert_eq!(inst.operand_width, 0);
-                assert_eq!(
-                    inst.addressing_mode,
-                    Some(AddressingMode::RegisterIndirect(9))
-                );
+            Some(Instruction::Swpb(inst)) => {
+                assert_eq!(inst.addressing_mode(), &AddressingMode::RegisterIndirect(9));
             }
             Some(inst) => panic!(format!("invalid instruction decoded: {:?}", inst)),
         }
@@ -633,12 +497,10 @@ mod tests {
         let inst = decode(&data, 0);
         match inst {
             None => panic!("no instruction returned"),
-            Some(Instruction::SingleOperand(inst)) => {
-                assert_eq!(inst.opcode, SWPB_OPCODE);
-                assert_eq!(inst.operand_width, 0);
+            Some(Instruction::Swpb(inst)) => {
                 assert_eq!(
-                    inst.addressing_mode,
-                    Some(AddressingMode::IndirectAutoIncrement(9))
+                    inst.addressing_mode(),
+                    &AddressingMode::IndirectAutoIncrement(9)
                 );
             }
             Some(inst) => panic!(format!("invalid instruction decoded: {:?}", inst)),
@@ -651,13 +513,9 @@ mod tests {
         let inst = decode(&data, 0);
         match inst {
             None => panic!("no instruction returned"),
-            Some(Instruction::SingleOperand(inst)) => {
-                assert_eq!(inst.opcode, RRA_OPCODE);
-                assert_eq!(inst.operand_width, 0);
-                assert_eq!(
-                    inst.addressing_mode,
-                    Some(AddressingMode::RegisterDirect(9))
-                );
+            Some(Instruction::Rra(inst)) => {
+                assert_eq!(inst.operand_width(), 0);
+                assert_eq!(inst.addressing_mode(), &AddressingMode::RegisterDirect(9));
             }
             Some(inst) => panic!(format!("invalid instruction decoded: {:?}", inst)),
         }
@@ -669,13 +527,9 @@ mod tests {
         let inst = decode(&data, 0);
         match inst {
             None => panic!("no instruction returned"),
-            Some(Instruction::SingleOperand(inst)) => {
-                assert_eq!(inst.opcode, RRA_OPCODE);
-                assert_eq!(inst.operand_width, 1);
-                assert_eq!(
-                    inst.addressing_mode,
-                    Some(AddressingMode::RegisterDirect(9))
-                );
+            Some(Instruction::Rra(inst)) => {
+                assert_eq!(inst.operand_width(), 1);
+                assert_eq!(inst.addressing_mode(), &AddressingMode::RegisterDirect(9));
             }
             Some(inst) => panic!(format!("invalid instruction decoded: {:?}", inst)),
         }
@@ -687,10 +541,9 @@ mod tests {
         let inst = decode(&data, 0);
         match inst {
             None => panic!("no instruction returned"),
-            Some(Instruction::SingleOperand(inst)) => {
-                assert_eq!(inst.opcode, RRA_OPCODE);
-                assert_eq!(inst.operand_width, 0);
-                assert_eq!(inst.addressing_mode, Some(AddressingMode::Indexed((9, 4))));
+            Some(Instruction::Rra(inst)) => {
+                assert_eq!(inst.operand_width(), 0);
+                assert_eq!(inst.addressing_mode(), &AddressingMode::Indexed((9, 4)));
             }
             Some(inst) => panic!(format!("invalid instruction decoded: {:?}", inst)),
         }
@@ -702,10 +555,9 @@ mod tests {
         let inst = decode(&data, 0);
         match inst {
             None => panic!("no instruction returned"),
-            Some(Instruction::SingleOperand(inst)) => {
-                assert_eq!(inst.opcode, RRA_OPCODE);
-                assert_eq!(inst.operand_width, 0);
-                assert_eq!(inst.addressing_mode, Some(AddressingMode::Indexed((9, -4))));
+            Some(Instruction::Rra(inst)) => {
+                assert_eq!(inst.operand_width(), 0);
+                assert_eq!(inst.addressing_mode(), &AddressingMode::Indexed((9, -4)));
             }
             Some(inst) => panic!(format!("invalid instruction decoded: {:?}", inst)),
         }
@@ -717,10 +569,9 @@ mod tests {
         let inst = decode(&data, 0);
         match inst {
             None => panic!("no instruction returned"),
-            Some(Instruction::SingleOperand(inst)) => {
-                assert_eq!(inst.opcode, RRA_OPCODE);
-                assert_eq!(inst.operand_width, 1);
-                assert_eq!(inst.addressing_mode, Some(AddressingMode::Indexed((9, 4))));
+            Some(Instruction::Rra(inst)) => {
+                assert_eq!(inst.operand_width(), 1);
+                assert_eq!(inst.addressing_mode(), &AddressingMode::Indexed((9, 4)));
             }
             Some(inst) => panic!(format!("invalid instruction decoded: {:?}", inst)),
         }
@@ -732,10 +583,9 @@ mod tests {
         let inst = decode(&data, 0);
         match inst {
             None => panic!("no instruction returned"),
-            Some(Instruction::SingleOperand(inst)) => {
-                assert_eq!(inst.opcode, RRA_OPCODE);
-                assert_eq!(inst.operand_width, 1);
-                assert_eq!(inst.addressing_mode, Some(AddressingMode::Indexed((9, -4))));
+            Some(Instruction::Rra(inst)) => {
+                assert_eq!(inst.operand_width(), 1);
+                assert_eq!(inst.addressing_mode(), &AddressingMode::Indexed((9, -4)));
             }
             Some(inst) => panic!(format!("invalid instruction decoded: {:?}", inst)),
         }
@@ -747,13 +597,9 @@ mod tests {
         let inst = decode(&data, 0);
         match inst {
             None => panic!("no instruction returned"),
-            Some(Instruction::SingleOperand(inst)) => {
-                assert_eq!(inst.opcode, RRA_OPCODE);
-                assert_eq!(inst.operand_width, 0);
-                assert_eq!(
-                    inst.addressing_mode,
-                    Some(AddressingMode::RegisterIndirect(9))
-                );
+            Some(Instruction::Rra(inst)) => {
+                assert_eq!(inst.operand_width(), 0);
+                assert_eq!(inst.addressing_mode(), &AddressingMode::RegisterIndirect(9));
             }
             Some(inst) => panic!(format!("invalid instruction decoded: {:?}", inst)),
         }
@@ -765,13 +611,9 @@ mod tests {
         let inst = decode(&data, 0);
         match inst {
             None => panic!("no instruction returned"),
-            Some(Instruction::SingleOperand(inst)) => {
-                assert_eq!(inst.opcode, RRA_OPCODE);
-                assert_eq!(inst.operand_width, 1);
-                assert_eq!(
-                    inst.addressing_mode,
-                    Some(AddressingMode::RegisterIndirect(9))
-                );
+            Some(Instruction::Rra(inst)) => {
+                assert_eq!(inst.operand_width(), 1);
+                assert_eq!(inst.addressing_mode(), &AddressingMode::RegisterIndirect(9));
             }
             Some(inst) => panic!(format!("invalid instruction decoded: {:?}", inst)),
         }
@@ -783,12 +625,11 @@ mod tests {
         let inst = decode(&data, 0);
         match inst {
             None => panic!("no instruction returned"),
-            Some(Instruction::SingleOperand(inst)) => {
-                assert_eq!(inst.opcode, RRA_OPCODE);
-                assert_eq!(inst.operand_width, 0);
+            Some(Instruction::Rra(inst)) => {
+                assert_eq!(inst.operand_width(), 0);
                 assert_eq!(
-                    inst.addressing_mode,
-                    Some(AddressingMode::IndirectAutoIncrement(9))
+                    inst.addressing_mode(),
+                    &AddressingMode::IndirectAutoIncrement(9)
                 );
             }
             Some(inst) => panic!(format!("invalid instruction decoded: {:?}", inst)),
@@ -801,12 +642,11 @@ mod tests {
         let inst = decode(&data, 0);
         match inst {
             None => panic!("no instruction returned"),
-            Some(Instruction::SingleOperand(inst)) => {
-                assert_eq!(inst.opcode, RRA_OPCODE);
-                assert_eq!(inst.operand_width, 1);
+            Some(Instruction::Rra(inst)) => {
+                assert_eq!(inst.operand_width(), 1);
                 assert_eq!(
-                    inst.addressing_mode,
-                    Some(AddressingMode::IndirectAutoIncrement(9))
+                    inst.addressing_mode(),
+                    &AddressingMode::IndirectAutoIncrement(9)
                 );
             }
             Some(inst) => panic!(format!("invalid instruction decoded: {:?}", inst)),
@@ -819,13 +659,8 @@ mod tests {
         let inst = decode(&data, 0);
         match inst {
             None => panic!("no instruction returned"),
-            Some(Instruction::SingleOperand(inst)) => {
-                assert_eq!(inst.opcode, SXT_OPCODE);
-                assert_eq!(inst.operand_width, 0);
-                assert_eq!(
-                    inst.addressing_mode,
-                    Some(AddressingMode::RegisterDirect(9))
-                );
+            Some(Instruction::Sxt(inst)) => {
+                assert_eq!(inst.addressing_mode(), &AddressingMode::RegisterDirect(9));
             }
             Some(inst) => panic!(format!("invalid instruction decoded: {:?}", inst)),
         }
@@ -837,10 +672,8 @@ mod tests {
         let inst = decode(&data, 0);
         match inst {
             None => panic!("no instruction returned"),
-            Some(Instruction::SingleOperand(inst)) => {
-                assert_eq!(inst.opcode, SXT_OPCODE);
-                assert_eq!(inst.operand_width, 0);
-                assert_eq!(inst.addressing_mode, Some(AddressingMode::Indexed((9, 4))));
+            Some(Instruction::Sxt(inst)) => {
+                assert_eq!(inst.addressing_mode(), &AddressingMode::Indexed((9, 4)));
             }
             Some(inst) => panic!(format!("invalid instruction decoded: {:?}", inst)),
         }
@@ -852,10 +685,8 @@ mod tests {
         let inst = decode(&data, 0);
         match inst {
             None => panic!("no instruction returned"),
-            Some(Instruction::SingleOperand(inst)) => {
-                assert_eq!(inst.opcode, SXT_OPCODE);
-                assert_eq!(inst.operand_width, 0);
-                assert_eq!(inst.addressing_mode, Some(AddressingMode::Indexed((9, -4))));
+            Some(Instruction::Sxt(inst)) => {
+                assert_eq!(inst.addressing_mode(), &AddressingMode::Indexed((9, -4)));
             }
             Some(inst) => panic!(format!("invalid instruction decoded: {:?}", inst)),
         }
@@ -867,13 +698,8 @@ mod tests {
         let inst = decode(&data, 0);
         match inst {
             None => panic!("no instruction returned"),
-            Some(Instruction::SingleOperand(inst)) => {
-                assert_eq!(inst.opcode, SXT_OPCODE);
-                assert_eq!(inst.operand_width, 0);
-                assert_eq!(
-                    inst.addressing_mode,
-                    Some(AddressingMode::RegisterIndirect(9))
-                );
+            Some(Instruction::Sxt(inst)) => {
+                assert_eq!(inst.addressing_mode(), &AddressingMode::RegisterIndirect(9));
             }
             Some(inst) => panic!(format!("invalid instruction decoded: {:?}", inst)),
         }
@@ -885,12 +711,10 @@ mod tests {
         let inst = decode(&data, 0);
         match inst {
             None => panic!("no instruction returned"),
-            Some(Instruction::SingleOperand(inst)) => {
-                assert_eq!(inst.opcode, SXT_OPCODE);
-                assert_eq!(inst.operand_width, 0);
+            Some(Instruction::Sxt(inst)) => {
                 assert_eq!(
-                    inst.addressing_mode,
-                    Some(AddressingMode::IndirectAutoIncrement(9))
+                    inst.addressing_mode(),
+                    &AddressingMode::IndirectAutoIncrement(9)
                 );
             }
             Some(inst) => panic!(format!("invalid instruction decoded: {:?}", inst)),
@@ -903,13 +727,9 @@ mod tests {
         let inst = decode(&data, 0);
         match inst {
             None => panic!("no instruction returned"),
-            Some(Instruction::SingleOperand(inst)) => {
-                assert_eq!(inst.opcode, PUSH_OPCODE);
-                assert_eq!(inst.operand_width, 0);
-                assert_eq!(
-                    inst.addressing_mode,
-                    Some(AddressingMode::RegisterDirect(9))
-                );
+            Some(Instruction::Push(inst)) => {
+                assert_eq!(inst.operand_width(), 0);
+                assert_eq!(inst.addressing_mode(), &AddressingMode::RegisterDirect(9));
             }
             Some(inst) => panic!(format!("invalid instruction decoded: {:?}", inst)),
         }
@@ -921,13 +741,9 @@ mod tests {
         let inst = decode(&data, 0);
         match inst {
             None => panic!("no instruction returned"),
-            Some(Instruction::SingleOperand(inst)) => {
-                assert_eq!(inst.opcode, PUSH_OPCODE);
-                assert_eq!(inst.operand_width, 1);
-                assert_eq!(
-                    inst.addressing_mode,
-                    Some(AddressingMode::RegisterDirect(9))
-                );
+            Some(Instruction::Push(inst)) => {
+                assert_eq!(inst.operand_width(), 1);
+                assert_eq!(inst.addressing_mode(), &AddressingMode::RegisterDirect(9));
             }
             Some(inst) => panic!(format!("invalid instruction decoded: {:?}", inst)),
         }
@@ -939,10 +755,9 @@ mod tests {
         let inst = decode(&data, 0);
         match inst {
             None => panic!("no instruction returned"),
-            Some(Instruction::SingleOperand(inst)) => {
-                assert_eq!(inst.opcode, PUSH_OPCODE);
-                assert_eq!(inst.operand_width, 0);
-                assert_eq!(inst.addressing_mode, Some(AddressingMode::Indexed((9, 4))));
+            Some(Instruction::Push(inst)) => {
+                assert_eq!(inst.operand_width(), 0);
+                assert_eq!(inst.addressing_mode(), &AddressingMode::Indexed((9, 4)));
             }
             Some(inst) => panic!(format!("invalid instruction decoded: {:?}", inst)),
         }
@@ -954,10 +769,9 @@ mod tests {
         let inst = decode(&data, 0);
         match inst {
             None => panic!("no instruction returned"),
-            Some(Instruction::SingleOperand(inst)) => {
-                assert_eq!(inst.opcode, PUSH_OPCODE);
-                assert_eq!(inst.operand_width, 0);
-                assert_eq!(inst.addressing_mode, Some(AddressingMode::Indexed((9, -4))));
+            Some(Instruction::Push(inst)) => {
+                assert_eq!(inst.operand_width(), 0);
+                assert_eq!(inst.addressing_mode(), &AddressingMode::Indexed((9, -4)));
             }
             Some(inst) => panic!(format!("invalid instruction decoded: {:?}", inst)),
         }
@@ -969,10 +783,9 @@ mod tests {
         let inst = decode(&data, 0);
         match inst {
             None => panic!("no instruction returned"),
-            Some(Instruction::SingleOperand(inst)) => {
-                assert_eq!(inst.opcode, PUSH_OPCODE);
-                assert_eq!(inst.operand_width, 1);
-                assert_eq!(inst.addressing_mode, Some(AddressingMode::Indexed((9, 4))));
+            Some(Instruction::Push(inst)) => {
+                assert_eq!(inst.operand_width(), 1);
+                assert_eq!(inst.addressing_mode(), &AddressingMode::Indexed((9, 4)));
             }
             Some(inst) => panic!(format!("invalid instruction decoded: {:?}", inst)),
         }
@@ -984,10 +797,9 @@ mod tests {
         let inst = decode(&data, 0);
         match inst {
             None => panic!("no instruction returned"),
-            Some(Instruction::SingleOperand(inst)) => {
-                assert_eq!(inst.opcode, PUSH_OPCODE);
-                assert_eq!(inst.operand_width, 1);
-                assert_eq!(inst.addressing_mode, Some(AddressingMode::Indexed((9, -4))));
+            Some(Instruction::Push(inst)) => {
+                assert_eq!(inst.operand_width(), 1);
+                assert_eq!(inst.addressing_mode(), &AddressingMode::Indexed((9, -4)));
             }
             Some(inst) => panic!(format!("invalid instruction decoded: {:?}", inst)),
         }
@@ -999,13 +811,9 @@ mod tests {
         let inst = decode(&data, 0);
         match inst {
             None => panic!("no instruction returned"),
-            Some(Instruction::SingleOperand(inst)) => {
-                assert_eq!(inst.opcode, PUSH_OPCODE);
-                assert_eq!(inst.operand_width, 0);
-                assert_eq!(
-                    inst.addressing_mode,
-                    Some(AddressingMode::RegisterIndirect(9))
-                );
+            Some(Instruction::Push(inst)) => {
+                assert_eq!(inst.operand_width(), 0);
+                assert_eq!(inst.addressing_mode(), &AddressingMode::RegisterIndirect(9));
             }
             Some(inst) => panic!(format!("invalid instruction decoded: {:?}", inst)),
         }
@@ -1017,13 +825,9 @@ mod tests {
         let inst = decode(&data, 0);
         match inst {
             None => panic!("no instruction returned"),
-            Some(Instruction::SingleOperand(inst)) => {
-                assert_eq!(inst.opcode, PUSH_OPCODE);
-                assert_eq!(inst.operand_width, 1);
-                assert_eq!(
-                    inst.addressing_mode,
-                    Some(AddressingMode::RegisterIndirect(9))
-                );
+            Some(Instruction::Push(inst)) => {
+                assert_eq!(inst.operand_width(), 1);
+                assert_eq!(inst.addressing_mode(), &AddressingMode::RegisterIndirect(9));
             }
             Some(inst) => panic!(format!("invalid instruction decoded: {:?}", inst)),
         }
@@ -1035,12 +839,11 @@ mod tests {
         let inst = decode(&data, 0);
         match inst {
             None => panic!("no instruction returned"),
-            Some(Instruction::SingleOperand(inst)) => {
-                assert_eq!(inst.opcode, PUSH_OPCODE);
-                assert_eq!(inst.operand_width, 0);
+            Some(Instruction::Push(inst)) => {
+                assert_eq!(inst.operand_width(), 0);
                 assert_eq!(
-                    inst.addressing_mode,
-                    Some(AddressingMode::IndirectAutoIncrement(9))
+                    inst.addressing_mode(),
+                    &AddressingMode::IndirectAutoIncrement(9)
                 );
             }
             Some(inst) => panic!(format!("invalid instruction decoded: {:?}", inst)),
@@ -1053,12 +856,11 @@ mod tests {
         let inst = decode(&data, 0);
         match inst {
             None => panic!("no instruction returned"),
-            Some(Instruction::SingleOperand(inst)) => {
-                assert_eq!(inst.opcode, PUSH_OPCODE);
-                assert_eq!(inst.operand_width, 1);
+            Some(Instruction::Push(inst)) => {
+                assert_eq!(inst.operand_width(), 1);
                 assert_eq!(
-                    inst.addressing_mode,
-                    Some(AddressingMode::IndirectAutoIncrement(9))
+                    inst.addressing_mode(),
+                    &AddressingMode::IndirectAutoIncrement(9)
                 );
             }
             Some(inst) => panic!(format!("invalid instruction decoded: {:?}", inst)),
@@ -1071,13 +873,8 @@ mod tests {
         let inst = decode(&data, 0);
         match inst {
             None => panic!("no instruction returned"),
-            Some(Instruction::SingleOperand(inst)) => {
-                assert_eq!(inst.opcode, CALL_OPCODE);
-                assert_eq!(inst.operand_width, 0);
-                assert_eq!(
-                    inst.addressing_mode,
-                    Some(AddressingMode::RegisterDirect(9))
-                );
+            Some(Instruction::Call(inst)) => {
+                assert_eq!(inst.addressing_mode(), &AddressingMode::RegisterDirect(9));
             }
             Some(inst) => panic!(format!("invalid instruction decoded: {:?}", inst)),
         }
@@ -1089,10 +886,8 @@ mod tests {
         let inst = decode(&data, 0);
         match inst {
             None => panic!("no instruction returned"),
-            Some(Instruction::SingleOperand(inst)) => {
-                assert_eq!(inst.opcode, CALL_OPCODE);
-                assert_eq!(inst.operand_width, 0);
-                assert_eq!(inst.addressing_mode, Some(AddressingMode::Indexed((9, 4))));
+            Some(Instruction::Call(inst)) => {
+                assert_eq!(inst.addressing_mode(), &AddressingMode::Indexed((9, 4)));
             }
             Some(inst) => panic!(format!("invalid instruction decoded: {:?}", inst)),
         }
@@ -1104,10 +899,8 @@ mod tests {
         let inst = decode(&data, 0);
         match inst {
             None => panic!("no instruction returned"),
-            Some(Instruction::SingleOperand(inst)) => {
-                assert_eq!(inst.opcode, CALL_OPCODE);
-                assert_eq!(inst.operand_width, 0);
-                assert_eq!(inst.addressing_mode, Some(AddressingMode::Indexed((9, -4))));
+            Some(Instruction::Call(inst)) => {
+                assert_eq!(inst.addressing_mode(), &AddressingMode::Indexed((9, -4)));
             }
             Some(inst) => panic!(format!("invalid instruction decoded: {:?}", inst)),
         }
@@ -1119,13 +912,8 @@ mod tests {
         let inst = decode(&data, 0);
         match inst {
             None => panic!("no instruction returned"),
-            Some(Instruction::SingleOperand(inst)) => {
-                assert_eq!(inst.opcode, CALL_OPCODE);
-                assert_eq!(inst.operand_width, 0);
-                assert_eq!(
-                    inst.addressing_mode,
-                    Some(AddressingMode::RegisterIndirect(9))
-                );
+            Some(Instruction::Call(inst)) => {
+                assert_eq!(inst.addressing_mode(), &AddressingMode::RegisterIndirect(9));
             }
             Some(inst) => panic!(format!("invalid instruction decoded: {:?}", inst)),
         }
@@ -1137,12 +925,10 @@ mod tests {
         let inst = decode(&data, 0);
         match inst {
             None => panic!("no instruction returned"),
-            Some(Instruction::SingleOperand(inst)) => {
-                assert_eq!(inst.opcode, CALL_OPCODE);
-                assert_eq!(inst.operand_width, 0);
+            Some(Instruction::Call(inst)) => {
                 assert_eq!(
-                    inst.addressing_mode,
-                    Some(AddressingMode::IndirectAutoIncrement(9))
+                    inst.addressing_mode(),
+                    &AddressingMode::IndirectAutoIncrement(9)
                 );
             }
             Some(inst) => panic!(format!("invalid instruction decoded: {:?}", inst)),
@@ -1155,10 +941,8 @@ mod tests {
         let inst = decode(&data, 0);
         match inst {
             None => panic!("no instruction returned"),
-            Some(Instruction::SingleOperand(inst)) => {
-                assert_eq!(inst.opcode, RETI_OPCODE);
-                assert_eq!(inst.operand_width, 0);
-                assert_eq!(inst.addressing_mode, None);
+            Some(Instruction::Reti(inst)) => {
+                assert_eq!(inst, Reti::new())
             }
             Some(inst) => panic!(format!("invalid instruction decoded: {:?}", inst)),
         }
@@ -1170,10 +954,9 @@ mod tests {
         let inst = decode(&data, 0);
         match inst {
             None => panic!("no instruction returned"),
-            Some(Instruction::SingleOperand(inst)) => {
-                assert_eq!(inst.opcode, PUSH_OPCODE);
-                assert_eq!(inst.operand_width, 0);
-                assert_eq!(inst.addressing_mode, Some(AddressingMode::Absolute(0x4400)));
+            Some(Instruction::Push(inst)) => {
+                assert_eq!(inst.operand_width(), 0);
+                assert_eq!(inst.addressing_mode(), &AddressingMode::Absolute(0x4400));
             }
             Some(inst) => panic!(format!("invalid instruction decoded: {:?}", inst)),
         }
@@ -1185,10 +968,9 @@ mod tests {
         let inst = decode(&data, 0);
         match inst {
             None => panic!("no instruction returned"),
-            Some(Instruction::SingleOperand(inst)) => {
-                assert_eq!(inst.opcode, PUSH_OPCODE);
-                assert_eq!(inst.operand_width, 0);
-                assert_eq!(inst.addressing_mode, Some(AddressingMode::Constant(4)));
+            Some(Instruction::Push(inst)) => {
+                assert_eq!(inst.operand_width(), 0);
+                assert_eq!(inst.addressing_mode(), &AddressingMode::Constant(4));
             }
             Some(inst) => panic!(format!("invalid instruction decoded: {:?}", inst)),
         }
@@ -1200,10 +982,9 @@ mod tests {
         let inst = decode(&data, 0);
         match inst {
             None => panic!("no instruction returned"),
-            Some(Instruction::SingleOperand(inst)) => {
-                assert_eq!(inst.opcode, PUSH_OPCODE);
-                assert_eq!(inst.operand_width, 0);
-                assert_eq!(inst.addressing_mode, Some(AddressingMode::Constant(8)));
+            Some(Instruction::Push(inst)) => {
+                assert_eq!(inst.operand_width(), 0);
+                assert_eq!(inst.addressing_mode(), &AddressingMode::Constant(8));
             }
             Some(inst) => panic!(format!("invalid instruction decoded: {:?}", inst)),
         }
@@ -1215,10 +996,9 @@ mod tests {
         let inst = decode(&data, 0);
         match inst {
             None => panic!("no instruction returned"),
-            Some(Instruction::SingleOperand(inst)) => {
-                assert_eq!(inst.opcode, PUSH_OPCODE);
-                assert_eq!(inst.operand_width, 0);
-                assert_eq!(inst.addressing_mode, Some(AddressingMode::Constant(0)));
+            Some(Instruction::Push(inst)) => {
+                assert_eq!(inst.operand_width(), 0);
+                assert_eq!(inst.addressing_mode(), &AddressingMode::Constant(0));
             }
             Some(inst) => panic!(format!("invalid instruction decoded: {:?}", inst)),
         }
@@ -1230,10 +1010,9 @@ mod tests {
         let inst = decode(&data, 0);
         match inst {
             None => panic!("no instruction returned"),
-            Some(Instruction::SingleOperand(inst)) => {
-                assert_eq!(inst.opcode, PUSH_OPCODE);
-                assert_eq!(inst.operand_width, 0);
-                assert_eq!(inst.addressing_mode, Some(AddressingMode::Constant(1)));
+            Some(Instruction::Push(inst)) => {
+                assert_eq!(inst.operand_width(), 0);
+                assert_eq!(inst.addressing_mode(), &AddressingMode::Constant(1));
             }
             Some(inst) => panic!(format!("invalid instruction decoded: {:?}", inst)),
         }
@@ -1245,10 +1024,9 @@ mod tests {
         let inst = decode(&data, 0);
         match inst {
             None => panic!("no instruction returned"),
-            Some(Instruction::SingleOperand(inst)) => {
-                assert_eq!(inst.opcode, PUSH_OPCODE);
-                assert_eq!(inst.operand_width, 0);
-                assert_eq!(inst.addressing_mode, Some(AddressingMode::Constant(2)));
+            Some(Instruction::Push(inst)) => {
+                assert_eq!(inst.operand_width(), 0);
+                assert_eq!(inst.addressing_mode(), &AddressingMode::Constant(2));
             }
             Some(inst) => panic!(format!("invalid instruction decoded: {:?}", inst)),
         }
@@ -1260,10 +1038,9 @@ mod tests {
         let inst = decode(&data, 0);
         match inst {
             None => panic!("no instruction returned"),
-            Some(Instruction::SingleOperand(inst)) => {
-                assert_eq!(inst.opcode, PUSH_OPCODE);
-                assert_eq!(inst.operand_width, 0);
-                assert_eq!(inst.addressing_mode, Some(AddressingMode::Constant(-1)));
+            Some(Instruction::Push(inst)) => {
+                assert_eq!(inst.operand_width(), 0);
+                assert_eq!(inst.addressing_mode(), &AddressingMode::Constant(-1));
             }
             Some(inst) => panic!(format!("invalid instruction decoded: {:?}", inst)),
         }
@@ -1275,10 +1052,8 @@ mod tests {
         let inst = decode(&data, 0);
         match inst {
             None => panic!("no instruction returned"),
-            Some(Instruction::SingleOperand(inst)) => {
-                assert_eq!(inst.opcode, CALL_OPCODE);
-                assert_eq!(inst.operand_width, 0);
-                assert_eq!(inst.addressing_mode, Some(AddressingMode::Symbolic(2)));
+            Some(Instruction::Call(inst)) => {
+                assert_eq!(inst.addressing_mode(), &AddressingMode::Symbolic(2));
             }
             Some(inst) => panic!(format!("invalid instruction decoded: {:?}", inst)),
         }
@@ -1290,10 +1065,8 @@ mod tests {
         let inst = decode(&data, 0);
         match inst {
             None => panic!("no instruction returned"),
-            Some(Instruction::SingleOperand(inst)) => {
-                assert_eq!(inst.opcode, CALL_OPCODE);
-                assert_eq!(inst.operand_width, 0);
-                assert_eq!(inst.addressing_mode, Some(AddressingMode::Immediate(2)));
+            Some(Instruction::Call(inst)) => {
+                assert_eq!(inst.addressing_mode(), &AddressingMode::Immediate(2));
             }
             Some(inst) => panic!(format!("invalid instruction decoded: {:?}", inst)),
         }

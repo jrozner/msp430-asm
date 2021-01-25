@@ -1,6 +1,8 @@
 use crate::jxx::*;
 use crate::single_operand::*;
+use crate::two_operand::*;
 
+// TODO: do we actually need/want PartialEq here?
 #[derive(Debug, Clone, PartialEq)]
 pub enum Instruction {
     // single operand instructions
@@ -21,4 +23,18 @@ pub enum Instruction {
     Jge(Jge),
     Jl(Jl),
     Jmp(Jmp),
+
+    // two operand instructions
+    Mov(Mov),
+    Add(Add),
+    Addc(Addc),
+    Subc(Subc),
+    Sub(Sub),
+    Cmp(Cmp),
+    Dadd(Dadd),
+    Bit(Bit),
+    Bic(Bic),
+    Bis(Bis),
+    Xor(Xor),
+    And(And),
 }

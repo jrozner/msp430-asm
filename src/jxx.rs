@@ -6,122 +6,30 @@ pub fn jxx_fix_offset(offset: u16) -> i16 {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq)]
-pub struct Jnz {
-    offset: i16,
+macro_rules! jxx {
+    ($e:ident) => {
+        #[derive(Debug, Clone, Copy, PartialEq)]
+        pub struct $e {
+            offset: i16,
+        }
+
+        impl $e {
+            pub fn new(offset: i16) -> $e {
+                $e { offset: offset }
+            }
+
+            pub fn offset(&self) -> i16 {
+                self.offset
+            }
+        }
+    };
 }
 
-impl Jnz {
-    pub fn new(offset: i16) -> Jnz {
-        Jnz { offset: offset }
-    }
-
-    pub fn offset(&self) -> i16 {
-        self.offset
-    }
-}
-
-#[derive(Debug, Clone, Copy, PartialEq)]
-pub struct Jz {
-    offset: i16,
-}
-
-impl Jz {
-    pub fn new(offset: i16) -> Jz {
-        Jz { offset: offset }
-    }
-
-    pub fn offset(&self) -> i16 {
-        self.offset
-    }
-}
-
-#[derive(Debug, Clone, Copy, PartialEq)]
-pub struct Jlo {
-    offset: i16,
-}
-
-impl Jlo {
-    pub fn new(offset: i16) -> Jlo {
-        Jlo { offset: offset }
-    }
-
-    pub fn offset(&self) -> i16 {
-        self.offset
-    }
-}
-
-#[derive(Debug, Clone, Copy, PartialEq)]
-pub struct Jc {
-    offset: i16,
-}
-
-impl Jc {
-    pub fn new(offset: i16) -> Jc {
-        Jc { offset: offset }
-    }
-
-    pub fn offset(&self) -> i16 {
-        self.offset
-    }
-}
-
-#[derive(Debug, Clone, Copy, PartialEq)]
-pub struct Jn {
-    offset: i16,
-}
-
-impl Jn {
-    pub fn new(offset: i16) -> Jn {
-        Jn { offset: offset }
-    }
-
-    pub fn offset(&self) -> i16 {
-        self.offset
-    }
-}
-
-#[derive(Debug, Clone, Copy, PartialEq)]
-pub struct Jge {
-    offset: i16,
-}
-
-impl Jge {
-    pub fn new(offset: i16) -> Jge {
-        Jge { offset: offset }
-    }
-
-    pub fn offset(&self) -> i16 {
-        self.offset
-    }
-}
-
-#[derive(Debug, Clone, Copy, PartialEq)]
-pub struct Jl {
-    offset: i16,
-}
-
-impl Jl {
-    pub fn new(offset: i16) -> Jl {
-        Jl { offset: offset }
-    }
-
-    pub fn offset(&self) -> i16 {
-        self.offset
-    }
-}
-
-#[derive(Debug, Clone, Copy, PartialEq)]
-pub struct Jmp {
-    offset: i16,
-}
-
-impl Jmp {
-    pub fn new(offset: i16) -> Jmp {
-        Jmp { offset: offset }
-    }
-
-    pub fn offset(&self) -> i16 {
-        self.offset
-    }
-}
+jxx!(Jnz);
+jxx!(Jz);
+jxx!(Jlo);
+jxx!(Jc);
+jxx!(Jn);
+jxx!(Jge);
+jxx!(Jl);
+jxx!(Jmp);

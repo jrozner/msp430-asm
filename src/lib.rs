@@ -64,7 +64,7 @@ const TWO_OPERAND_WIDTH: u16 = 0b100_0000;
 const TWO_OPERAND_AS: u16 = 0b11_0000;
 const TWO_OPERAND_DESTINATION: u16 = 0b1111;
 
-fn decode(data: &[u8], addr: usize) -> Option<Instruction> {
+pub fn decode(data: &[u8], addr: usize) -> Option<Instruction> {
     if data.len() < (addr + 2) {
         return None;
     }

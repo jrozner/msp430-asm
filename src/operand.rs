@@ -9,7 +9,7 @@ pub enum Source {
     RegisterDirect(u8),
     Indexed((u8, i16)),
     RegisterIndirect(u8),
-    IndirectAutoIncrement(u8),
+    RegisterIndirectAutoIncrement(u8),
     Symbolic(i16),
     Immediate(i16),
     Absolute(u16),
@@ -81,7 +81,7 @@ pub fn parse_source(register: u8, source: u16, data: &[u8]) -> Result<(Source, &
                 }
             }
             2 => Ok((Source::RegisterIndirect(register), data)),
-            3 => Ok((Source::IndirectAutoIncrement(register), data)),
+            3 => Ok((Source::RegisterIndirectAutoIncrement(register), data)),
             _ => Err(DecodeError::InvalidSource((source, register))),
         },
     }
@@ -250,7 +250,10 @@ mod tests {
     fn source_gp_register_indirect_auto_increment() {
         let data = [];
         let source = parse_source(9, 3, &data);
-        assert_eq!(source, Ok((Source::IndirectAutoIncrement(9), &data[..])));
+        assert_eq!(
+            source,
+            Ok((Source::RegisterIndirectAutoIncrement(9), &data[..]))
+        );
     }
 
     #[test]

@@ -372,7 +372,7 @@ mod tests {
         assert_eq!(
             inst,
             Ok(Instruction::Rrc(Rrc::new(
-                Source::IndirectAutoIncrement(9),
+                Source::RegisterIndirectAutoIncrement(9),
                 0
             )))
         );
@@ -385,7 +385,7 @@ mod tests {
         assert_eq!(
             inst,
             Ok(Instruction::Rrc(Rrc::new(
-                Source::IndirectAutoIncrement(9),
+                Source::RegisterIndirectAutoIncrement(9),
                 1
             )))
         );
@@ -437,9 +437,9 @@ mod tests {
         let inst = decode(&data, 0);
         assert_eq!(
             inst,
-            Ok(Instruction::Swpb(Swpb::new(Source::IndirectAutoIncrement(
-                9
-            ))))
+            Ok(Instruction::Swpb(Swpb::new(
+                Source::RegisterIndirectAutoIncrement(9)
+            )))
         );
     }
 
@@ -530,7 +530,7 @@ mod tests {
         assert_eq!(
             inst,
             Ok(Instruction::Rra(Rra::new(
-                Source::IndirectAutoIncrement(9),
+                Source::RegisterIndirectAutoIncrement(9),
                 0
             )))
         );
@@ -543,7 +543,7 @@ mod tests {
         assert_eq!(
             inst,
             Ok(Instruction::Rra(Rra::new(
-                Source::IndirectAutoIncrement(9),
+                Source::RegisterIndirectAutoIncrement(9),
                 1
             )))
         );
@@ -595,7 +595,9 @@ mod tests {
         let inst = decode(&data, 0);
         assert_eq!(
             inst,
-            Ok(Instruction::Sxt(Sxt::new(Source::IndirectAutoIncrement(9))))
+            Ok(Instruction::Sxt(Sxt::new(
+                Source::RegisterIndirectAutoIncrement(9)
+            )))
         );
     }
 
@@ -686,7 +688,7 @@ mod tests {
         assert_eq!(
             inst,
             Ok(Instruction::Push(Push::new(
-                Source::IndirectAutoIncrement(9),
+                Source::RegisterIndirectAutoIncrement(9),
                 0
             )))
         );
@@ -699,7 +701,7 @@ mod tests {
         assert_eq!(
             inst,
             Ok(Instruction::Push(Push::new(
-                Source::IndirectAutoIncrement(9),
+                Source::RegisterIndirectAutoIncrement(9),
                 1
             )))
         );
@@ -821,9 +823,9 @@ mod tests {
         let inst = decode(&data, 0);
         assert_eq!(
             inst,
-            Ok(Instruction::Call(Call::new(Source::IndirectAutoIncrement(
-                9
-            ))))
+            Ok(Instruction::Call(Call::new(
+                Source::RegisterIndirectAutoIncrement(9)
+            )))
         );
     }
 

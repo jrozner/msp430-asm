@@ -23,7 +23,6 @@ pub enum Destination {
 }
 
 pub fn parse_source(register: u8, source: u16, data: &[u8]) -> Result<(Source, &[u8])> {
-    // TODO: add checks for split_at to ensure that there is enough data
     match register {
         0 => match source {
             1 => {

@@ -105,9 +105,7 @@ pub fn decode(data: &[u8], addr: usize) -> Result<Instruction> {
         JMP_INSTRUCTION => {
             let condition = (first_word & JMP_CONDITION_MASK) >> 10;
             let offset = jxx_fix_offset(first_word & JMP_OFFSET);
-            // TODO: we may be able to simplify this by using C style
-            // enums and just convert from the condition to the value
-            // after checking that the condition is [0, 7)
+
             match condition {
                 0 => Ok(Instruction::Jnz(Jnz::new(offset))),
                 1 => Ok(Instruction::Jz(Jz::new(offset))),
@@ -206,8 +204,6 @@ pub fn decode(data: &[u8], addr: usize) -> Result<Instruction> {
     }
 }
 
-// TODO does it make sense to create a trait for from u16 via one's complement?
-// TODO write tests for this
 fn ones_complement(val: u16) -> i16 {
     if 0b1000_0000_0000_0000 & val > 0 {
         -1 * !val as i16

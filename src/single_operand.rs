@@ -1,7 +1,10 @@
+use std::fmt;
+
+use crate::instruction::{BYTE_SUFFIX, WORD_SUFFIX};
 use crate::Source;
 
 macro_rules! single_operand {
-    ($e:ident) => {
+    ($e:ident, $n:expr) => {
         #[derive(Debug, Clone, PartialEq)]
         pub struct $e {
             source: Source,
@@ -16,11 +19,17 @@ macro_rules! single_operand {
                 &self.source
             }
         }
+
+        impl fmt::Display for $e {
+            fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+                write!(f, "{} {}", $n, self.source)
+            }
+        }
     };
 }
 
 macro_rules! single_operand_width {
-    ($e:ident) => {
+    ($e:ident, $n:expr) => {
         #[derive(Debug, Clone, PartialEq)]
         pub struct $e {
             source: Source,
@@ -43,15 +52,27 @@ macro_rules! single_operand_width {
                 self.operand_width
             }
         }
+
+        impl fmt::Display for $e {
+            fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+                let suffix = if self.operand_width == 1 {
+                    BYTE_SUFFIX
+                } else {
+                    WORD_SUFFIX
+                };
+
+                write!(f, "{}{} {}", $n, suffix, self.source)
+            }
+        }
     };
 }
 
-single_operand_width!(Rrc);
-single_operand!(Swpb);
-single_operand_width!(Rra);
-single_operand!(Sxt);
-single_operand_width!(Push);
-single_operand!(Call);
+single_operand_width!(Rrc, "rrc");
+single_operand!(Swpb, "swpb");
+single_operand_width!(Rra, "rra");
+single_operand!(Sxt, "sxt");
+single_operand_width!(Push, "push");
+single_operand!(Call, "call");
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct Reti {}
@@ -59,5 +80,11 @@ pub struct Reti {}
 impl Reti {
     pub fn new() -> Reti {
         Reti {}
+    }
+}
+
+impl fmt::Display for Reti {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "reti")
     }
 }

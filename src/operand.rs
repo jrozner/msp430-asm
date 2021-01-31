@@ -1,4 +1,5 @@
 use std::convert::TryInto;
+use std::fmt;
 
 use crate::ones_complement;
 use crate::DecodeError;
@@ -16,10 +17,147 @@ pub enum Source {
     Constant(i8),
 }
 
+impl fmt::Display for Source {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Source::RegisterDirect(r) => {
+                if *r == 1 {
+                    write!(f, "sp")
+                } else {
+                    write!(f, "r{}", r)
+                }
+            }
+            Source::Indexed((r, i)) => {
+                if *r == 1 {
+                    if *i >= 0 {
+                        write!(f, "{:#x}(sp)", i)
+                    } else {
+                        write!(f, "-{:#x}(sp)", i * -1)
+                    }
+                } else {
+                    if *i >= 0 {
+                        write!(f, "{:#x}(r{})", i, r)
+                    } else {
+                        write!(f, "-{:#x}(r{})", i * -1, r)
+                    }
+                }
+            }
+            Source::RegisterIndirect(r) => {
+                if *r == 1 {
+                    write!(f, "@sp")
+                } else {
+                    write!(f, "@r{}", r)
+                }
+            }
+            Source::RegisterIndirectAutoIncrement(r) => {
+                if *r == 1 {
+                    write!(f, "@sp+")
+                } else {
+                    write!(f, "@r{}+", r)
+                }
+            }
+            // TODO: is this correct? can you know what this is without knowing what PC is?
+            Source::Symbolic(i) => {
+                if *i >= 0 {
+                    write!(f, "#{:#x}(pc)", i)
+                } else {
+                    write!(f, "#-{:#x}(pc)", i * -1)
+                }
+            }
+            Source::Immediate(i) => {
+                if *i >= 0 {
+                    write!(f, "#{:#x}", i)
+                } else {
+                    write!(f, "#-{:#x}", i * -1)
+                }
+            }
+            Source::Absolute(a) => write!(f, "#{:#x}", a),
+            Source::Constant(i) => {
+                if *i >= 0 {
+                    write!(f, "#{:#x}", i)
+                } else {
+                    write!(f, "#-{:#x}", i * -1)
+                }
+            }
+        }
+    }
+}
+
+impl std::cmp::PartialEq<Destination> for Source {
+    fn eq(&self, other: &Destination) -> bool {
+        if let Destination::RegisterDirect(dest_r) = other {
+            if let Source::RegisterDirect(src_r) = self {
+                return dest_r == src_r;
+            } else {
+                return false;
+            }
+        } else if let Destination::Indexed((dest_r, dest_i)) = other {
+            if let Source::Indexed((src_r, src_i)) = self {
+                return dest_r == src_r && dest_i == src_i;
+            } else {
+                false
+            }
+        } else {
+            return false;
+        }
+    }
+}
+
 #[derive(Debug, Clone, PartialEq)]
 pub enum Destination {
     RegisterDirect(u8),
     Indexed((u8, i16)),
+}
+
+impl fmt::Display for Destination {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Destination::RegisterDirect(r) => match r {
+                0 => write!(f, "pc"),
+                1 => write!(f, "sp"),
+                2 => write!(f, "sr"),
+                3 => write!(f, "cg"),
+                _ => write!(f, "r{}", r),
+            },
+            Destination::Indexed((r, i)) => match r {
+                0 => {
+                    if *i >= 0 {
+                        write!(f, "{:#x}(pc)", i)
+                    } else {
+                        write!(f, "-{:#x}(pc)", i * -1)
+                    }
+                }
+                1 => {
+                    if *i >= 0 {
+                        write!(f, "{:#x}(sp)", i)
+                    } else {
+                        write!(f, "-{:#x}(sp)", i * -1)
+                    }
+                }
+                2 => {
+                    if *i >= 0 {
+                        write!(f, "{:#x}(sr)", i)
+                    } else {
+                        write!(f, "-{:#x}(sr)", i * -1)
+                    }
+                }
+                3 => {
+                    if *i >= 0 {
+                        write!(f, "{:#x}(cg)", i)
+                    } else {
+                        write!(f, "-{:#x}(cg)", i * -1)
+                    }
+                }
+                _ => {
+                    if *i >= 0 {
+                        write!(f, "{:#x}({})", i, r)
+                    } else {
+                        write!(f, "-{:#x}({})", i * -1, r)
+                    }
+                }
+            },
+        }
+    }
 }
 
 pub fn parse_source(register: u8, source: u16, data: &[u8]) -> Result<(Source, &[u8])> {

@@ -1,5 +1,5 @@
 [package]
-name = "msp430-dis"
+name = "msp430-asm"
 version = "0.1.0"
 authors = ["jrozner"]
 edition = "2018"

@@ -17,6 +17,21 @@ pub enum Source {
     Constant(i8),
 }
 
+impl Source {
+    pub fn len(&self) -> usize {
+        match self {
+            Source::RegisterDirect(_) => 0,
+            Source::Indexed(_) => 2,
+            Source::RegisterIndirect(_) => 0,
+            Source::RegisterIndirectAutoIncrement(_) => 0,
+            Source::Symbolic(_) => 2,
+            Source::Immediate(_) => 2,
+            Source::Absolute(_) => 2,
+            Source::Constant(_) => 0,
+        }
+    }
+}
+
 impl fmt::Display for Source {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
@@ -107,6 +122,15 @@ impl std::cmp::PartialEq<Destination> for Source {
 pub enum Destination {
     RegisterDirect(u8),
     Indexed((u8, i16)),
+}
+
+impl Destination {
+    pub fn len(&self) -> usize {
+        match self {
+            Destination::RegisterDirect(_) => 0,
+            Destination::Indexed(_) => 2,
+        }
+    }
 }
 
 impl fmt::Display for Destination {

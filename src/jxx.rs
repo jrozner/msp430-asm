@@ -23,6 +23,10 @@ macro_rules! jxx {
             pub fn offset(&self) -> i16 {
                 self.offset
             }
+
+            pub fn len(&self) -> usize {
+                2
+            }
         }
 
         impl fmt::Display for $e {

@@ -18,6 +18,10 @@ macro_rules! single_operand {
             pub fn source(&self) -> &Source {
                 &self.source
             }
+
+            pub fn len(&self) -> usize {
+                2 + self.source.len()
+            }
         }
 
         impl fmt::Display for $e {
@@ -50,6 +54,10 @@ macro_rules! single_operand_width {
 
             pub fn operand_width(&self) -> u8 {
                 self.operand_width
+            }
+
+            pub fn len(&self) -> usize {
+                2 + self.source.len()
             }
         }
 

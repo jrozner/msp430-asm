@@ -32,6 +32,10 @@ macro_rules! two_operand {
             pub fn destination(&self) -> &Destination {
                 &self.destination
             }
+
+            pub fn len(&self) -> usize {
+                2 + self.source.len() + self.destination.len()
+            }
         }
     };
 }

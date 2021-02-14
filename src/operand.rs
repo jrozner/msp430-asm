@@ -86,7 +86,7 @@ impl fmt::Display for Source {
                     write!(f, "#-{:#x}", i * -1)
                 }
             }
-            Source::Absolute(a) => write!(f, "#{:#x}", a),
+            Source::Absolute(a) => write!(f, "&{:#x}", a),
             Source::Constant(i) => {
                 if *i >= 0 {
                     write!(f, "#{:#x}", i)

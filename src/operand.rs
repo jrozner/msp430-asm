@@ -174,9 +174,9 @@ impl fmt::Display for Destination {
                 }
                 _ => {
                     if *i >= 0 {
-                        write!(f, "{:#x}({})", i, r)
+                        write!(f, "{:#x}(r{})", i, r)
                     } else {
-                        write!(f, "-{:#x}({})", i * -1, r)
+                        write!(f, "-{:#x}(r{})", i * -1, r)
                     }
                 }
             },

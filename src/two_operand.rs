@@ -64,7 +64,7 @@ impl fmt::Display for Mov {
         }
 
         if self.destination == Destination::RegisterDirect(0) {
-            return write!(f, "br {}", self.destination);
+            return write!(f, "br {}", self.source);
         }
 
         write!(f, "mov{} {}, {}", suffix, self.source, self.destination)

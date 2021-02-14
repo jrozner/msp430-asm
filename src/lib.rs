@@ -68,12 +68,12 @@ const TWO_OPERAND_DESTINATION: u16 = 0b1111;
 
 pub type Result<T> = std::result::Result<T, DecodeError>;
 
-pub fn decode(data: &[u8], addr: usize) -> Result<Instruction> {
-    if data.len() < (addr + 2) {
+pub fn decode(data: &[u8]) -> Result<Instruction> {
+    if data.len() < 2 {
         return Err(DecodeError::MissingInstruction);
     }
 
-    let (int_bytes, remaining_data) = data[addr..].split_at(std::mem::size_of::<u16>());
+    let (int_bytes, remaining_data) = data.split_at(std::mem::size_of::<u16>());
     let first_word = u16::from_le_bytes(int_bytes.try_into().unwrap());
 
     let inst_type = first_word & INST_TYPE_MASK;
@@ -219,76 +219,76 @@ mod tests {
     #[test]
     fn empty_data() {
         let data = [];
-        assert_eq!(decode(&data, 0), Err(DecodeError::MissingInstruction));
+        assert_eq!(decode(&data), Err(DecodeError::MissingInstruction));
     }
 
     #[test]
     fn jnz() {
         let data = [0x00, 0x20];
-        let inst = decode(&data, 0);
+        let inst = decode(&data);
         assert_eq!(inst, Ok(Instruction::Jnz(Jnz::new(0))));
     }
 
     #[test]
     fn negative_jnz() {
         let data = [0xf9, 0x23];
-        let inst = decode(&data, 0);
+        let inst = decode(&data);
         assert_eq!(inst, Ok(Instruction::Jnz(Jnz::new(-6))));
     }
 
     #[test]
     fn jz() {
         let data = [0x00, 0x24];
-        let inst = decode(&data, 0);
+        let inst = decode(&data);
         assert_eq!(inst, Ok(Instruction::Jz(Jz::new(0))));
     }
 
     #[test]
     fn jlo() {
         let data = [0x00, 0x28];
-        let inst = decode(&data, 0);
+        let inst = decode(&data);
         assert_eq!(inst, Ok(Instruction::Jlo(Jlo::new(0))));
     }
 
     #[test]
     fn jlc() {
         let data = [0x00, 0x2c];
-        let inst = decode(&data, 0);
+        let inst = decode(&data);
         assert_eq!(inst, Ok(Instruction::Jc(Jc::new(0))));
     }
 
     #[test]
     fn jn() {
         let data = [0x00, 0x30];
-        let inst = decode(&data, 0);
+        let inst = decode(&data);
         assert_eq!(inst, Ok(Instruction::Jn(Jn::new(0))));
     }
 
     #[test]
     fn jge() {
         let data = [0x00, 0x34];
-        let inst = decode(&data, 0);
+        let inst = decode(&data);
         assert_eq!(inst, Ok(Instruction::Jge(Jge::new(0))));
     }
 
     #[test]
     fn jl() {
         let data = [0x00, 0x38];
-        let inst = decode(&data, 0);
+        let inst = decode(&data);
         assert_eq!(inst, Ok(Instruction::Jl(Jl::new(0))));
     }
 
     #[test]
     fn jmp() {
         let data = [0x00, 0x3c];
-        let inst = decode(&data, 0);
+        let inst = decode(&data);
         assert_eq!(inst, Ok(Instruction::Jmp(Jmp::new(0))));
     }
 
     #[test]
     fn rrc_w_register_direct() {
         let data = [0x09, 0x10];
-        let inst = decode(&data, 0);
+        let inst = decode(&data);
         assert_eq!(
             inst,
             Ok(Instruction::Rrc(Rrc::new(Source::RegisterDirect(9), 0)))
@@ -298,7 +298,7 @@ mod tests {
     #[test]
     fn rrc_b_register_direct() {
         let data = [0x49, 0x10];
-        let inst = decode(&data, 0);
+        let inst = decode(&data);
         assert_eq!(
             inst,
             Ok(Instruction::Rrc(Rrc::new(Source::RegisterDirect(9), 1)))
@@ -308,7 +308,7 @@ mod tests {
     #[test]
     fn rrc_w_indexed_positive() {
         let data = [0x19, 0x10, 0x4, 0x0];
-        let inst = decode(&data, 0);
+        let inst = decode(&data);
         assert_eq!(
             inst,
             Ok(Instruction::Rrc(Rrc::new(Source::Indexed((9, 4)), 0)))
@@ -318,7 +318,7 @@ mod tests {
     #[test]
     fn rrc_w_indexed_negative() {
         let data = [0x19, 0x10, 0xfb, 0xff];
-        let inst = decode(&data, 0);
+        let inst = decode(&data);
         assert_eq!(
             inst,
             Ok(Instruction::Rrc(Rrc::new(Source::Indexed((9, -4)), 0)))
@@ -328,7 +328,7 @@ mod tests {
     #[test]
     fn rrc_b_indexed_positive() {
         let data = [0x59, 0x10, 0x04, 0x00];
-        let inst = decode(&data, 0);
+        let inst = decode(&data);
         assert_eq!(
             inst,
             Ok(Instruction::Rrc(Rrc::new(Source::Indexed((9, 4)), 1)))
@@ -338,7 +338,7 @@ mod tests {
     #[test]
     fn rrc_b_indexed_negative() {
         let data = [0x59, 0x10, 0xfb, 0xff];
-        let inst = decode(&data, 0);
+        let inst = decode(&data);
         assert_eq!(
             inst,
             Ok(Instruction::Rrc(Rrc::new(Source::Indexed((9, -4)), 1)))
@@ -348,7 +348,7 @@ mod tests {
     #[test]
     fn rrc_w_register_indirect() {
         let data = [0x29, 0x10];
-        let inst = decode(&data, 0);
+        let inst = decode(&data);
         assert_eq!(
             inst,
             Ok(Instruction::Rrc(Rrc::new(Source::RegisterIndirect(9), 0)))
@@ -358,7 +358,7 @@ mod tests {
     #[test]
     fn rrc_b_register_indirect() {
         let data = [0x69, 0x10];
-        let inst = decode(&data, 0);
+        let inst = decode(&data);
         assert_eq!(
             inst,
             Ok(Instruction::Rrc(Rrc::new(Source::RegisterIndirect(9), 1)))
@@ -368,7 +368,7 @@ mod tests {
     #[test]
     fn rrc_w_register_indirect_autoincrement() {
         let data = [0x39, 0x10];
-        let inst = decode(&data, 0);
+        let inst = decode(&data);
         assert_eq!(
             inst,
             Ok(Instruction::Rrc(Rrc::new(
@@ -381,7 +381,7 @@ mod tests {
     #[test]
     fn rrc_b_register_indirect_autoincrement() {
         let data = [0x79, 0x10];
-        let inst = decode(&data, 0);
+        let inst = decode(&data);
         assert_eq!(
             inst,
             Ok(Instruction::Rrc(Rrc::new(
@@ -394,7 +394,7 @@ mod tests {
     #[test]
     fn swpb_register_direct() {
         let data = [0x89, 0x10];
-        let inst = decode(&data, 0);
+        let inst = decode(&data);
         assert_eq!(
             inst,
             Ok(Instruction::Swpb(Swpb::new(Source::RegisterDirect(9))))
@@ -404,7 +404,7 @@ mod tests {
     #[test]
     fn swpb_register_indexed_positive() {
         let data = [0x99, 0x10, 0x04, 0x00];
-        let inst = decode(&data, 0);
+        let inst = decode(&data);
         assert_eq!(
             inst,
             Ok(Instruction::Swpb(Swpb::new(Source::Indexed((9, 4)))))
@@ -414,7 +414,7 @@ mod tests {
     #[test]
     fn swpb_register_indexed_negative() {
         let data = [0x99, 0x10, 0xfb, 0xff];
-        let inst = decode(&data, 0);
+        let inst = decode(&data);
         assert_eq!(
             inst,
             Ok(Instruction::Swpb(Swpb::new(Source::Indexed((9, -4)))))
@@ -424,7 +424,7 @@ mod tests {
     #[test]
     fn swpb_register_indirect() {
         let data = [0xa9, 0x10];
-        let inst = decode(&data, 0);
+        let inst = decode(&data);
         assert_eq!(
             inst,
             Ok(Instruction::Swpb(Swpb::new(Source::RegisterIndirect(9))))
@@ -434,7 +434,7 @@ mod tests {
     #[test]
     fn swpb_register_indirect_autoincrement() {
         let data = [0xb9, 0x10];
-        let inst = decode(&data, 0);
+        let inst = decode(&data);
         assert_eq!(
             inst,
             Ok(Instruction::Swpb(Swpb::new(
@@ -446,7 +446,7 @@ mod tests {
     #[test]
     fn rra_w_register_direct() {
         let data = [0x09, 0x11];
-        let inst = decode(&data, 0);
+        let inst = decode(&data);
         assert_eq!(
             inst,
             Ok(Instruction::Rra(Rra::new(Source::RegisterDirect(9), 0)))
@@ -456,7 +456,7 @@ mod tests {
     #[test]
     fn rra_b_register_direct() {
         let data = [0x49, 0x11];
-        let inst = decode(&data, 0);
+        let inst = decode(&data);
         assert_eq!(
             inst,
             Ok(Instruction::Rra(Rra::new(Source::RegisterDirect(9), 1)))
@@ -466,7 +466,7 @@ mod tests {
     #[test]
     fn rra_w_indexed_positive() {
         let data = [0x19, 0x11, 0x4, 0x0];
-        let inst = decode(&data, 0);
+        let inst = decode(&data);
         assert_eq!(
             inst,
             Ok(Instruction::Rra(Rra::new(Source::Indexed((9, 4)), 0)))
@@ -476,7 +476,7 @@ mod tests {
     #[test]
     fn rra_w_indexed_negative() {
         let data = [0x19, 0x11, 0xfb, 0xff];
-        let inst = decode(&data, 0);
+        let inst = decode(&data);
         assert_eq!(
             inst,
             Ok(Instruction::Rra(Rra::new(Source::Indexed((9, -4)), 0)))
@@ -486,7 +486,7 @@ mod tests {
     #[test]
     fn rra_b_indexed_positive() {
         let data = [0x59, 0x11, 0x04, 0x00];
-        let inst = decode(&data, 0);
+        let inst = decode(&data);
         assert_eq!(
             inst,
             Ok(Instruction::Rra(Rra::new(Source::Indexed((9, 4)), 1)))
@@ -496,7 +496,7 @@ mod tests {
     #[test]
     fn rra_b_indexed_negative() {
         let data = [0x59, 0x11, 0xfb, 0xff];
-        let inst = decode(&data, 0);
+        let inst = decode(&data);
         assert_eq!(
             inst,
             Ok(Instruction::Rra(Rra::new(Source::Indexed((9, -4)), 1)))
@@ -506,7 +506,7 @@ mod tests {
     #[test]
     fn rra_w_register_indirect() {
         let data = [0x29, 0x11];
-        let inst = decode(&data, 0);
+        let inst = decode(&data);
         assert_eq!(
             inst,
             Ok(Instruction::Rra(Rra::new(Source::RegisterIndirect(9), 0)))
@@ -516,7 +516,7 @@ mod tests {
     #[test]
     fn rra_b_register_indirect() {
         let data = [0x69, 0x11];
-        let inst = decode(&data, 0);
+        let inst = decode(&data);
         assert_eq!(
             inst,
             Ok(Instruction::Rra(Rra::new(Source::RegisterIndirect(9), 1)))
@@ -526,7 +526,7 @@ mod tests {
     #[test]
     fn rra_w_register_indirect_autoincrement() {
         let data = [0x39, 0x11];
-        let inst = decode(&data, 0);
+        let inst = decode(&data);
         assert_eq!(
             inst,
             Ok(Instruction::Rra(Rra::new(
@@ -539,7 +539,7 @@ mod tests {
     #[test]
     fn rra_b_register_indirect_autoincrement() {
         let data = [0x79, 0x11];
-        let inst = decode(&data, 0);
+        let inst = decode(&data);
         assert_eq!(
             inst,
             Ok(Instruction::Rra(Rra::new(
@@ -552,7 +552,7 @@ mod tests {
     #[test]
     fn sxt_register_direct() {
         let data = [0x89, 0x11];
-        let inst = decode(&data, 0);
+        let inst = decode(&data);
         assert_eq!(
             inst,
             Ok(Instruction::Sxt(Sxt::new(Source::RegisterDirect(9))))
@@ -562,7 +562,7 @@ mod tests {
     #[test]
     fn sxt_register_indexed_positive() {
         let data = [0x99, 0x11, 0x04, 0x00];
-        let inst = decode(&data, 0);
+        let inst = decode(&data);
         assert_eq!(
             inst,
             Ok(Instruction::Sxt(Sxt::new(Source::Indexed((9, 4)))))
@@ -572,7 +572,7 @@ mod tests {
     #[test]
     fn sxt_register_indexed_negative() {
         let data = [0x99, 0x11, 0xfb, 0xff];
-        let inst = decode(&data, 0);
+        let inst = decode(&data);
         assert_eq!(
             inst,
             Ok(Instruction::Sxt(Sxt::new(Source::Indexed((9, -4)))))
@@ -582,7 +582,7 @@ mod tests {
     #[test]
     fn sxt_register_indirect() {
         let data = [0xa9, 0x11];
-        let inst = decode(&data, 0);
+        let inst = decode(&data);
         assert_eq!(
             inst,
             Ok(Instruction::Sxt(Sxt::new(Source::RegisterIndirect(9))))
@@ -592,7 +592,7 @@ mod tests {
     #[test]
     fn sxt_register_indirect_autoincrement() {
         let data = [0xb9, 0x11];
-        let inst = decode(&data, 0);
+        let inst = decode(&data);
         assert_eq!(
             inst,
             Ok(Instruction::Sxt(Sxt::new(
@@ -604,7 +604,7 @@ mod tests {
     #[test]
     fn push_w_register_direct() {
         let data = [0x09, 0x12];
-        let inst = decode(&data, 0);
+        let inst = decode(&data);
         assert_eq!(
             inst,
             Ok(Instruction::Push(Push::new(Source::RegisterDirect(9), 0)))
@@ -614,7 +614,7 @@ mod tests {
     #[test]
     fn push_b_register_direct() {
         let data = [0x49, 0x12];
-        let inst = decode(&data, 0);
+        let inst = decode(&data);
         assert_eq!(
             inst,
             Ok(Instruction::Push(Push::new(Source::RegisterDirect(9), 1)))
@@ -624,7 +624,7 @@ mod tests {
     #[test]
     fn push_w_indexed_positive() {
         let data = [0x19, 0x12, 0x4, 0x0];
-        let inst = decode(&data, 0);
+        let inst = decode(&data);
         assert_eq!(
             inst,
             Ok(Instruction::Push(Push::new(Source::Indexed((9, 4)), 0)))
@@ -634,7 +634,7 @@ mod tests {
     #[test]
     fn push_w_indexed_negative() {
         let data = [0x19, 0x12, 0xfb, 0xff];
-        let inst = decode(&data, 0);
+        let inst = decode(&data);
         assert_eq!(
             inst,
             Ok(Instruction::Push(Push::new(Source::Indexed((9, -4)), 0)))
@@ -644,7 +644,7 @@ mod tests {
     #[test]
     fn push_b_indexed_positive() {
         let data = [0x59, 0x12, 0x04, 0x00];
-        let inst = decode(&data, 0);
+        let inst = decode(&data);
         assert_eq!(
             inst,
             Ok(Instruction::Push(Push::new(Source::Indexed((9, 4)), 1)))
@@ -654,7 +654,7 @@ mod tests {
     #[test]
     fn push_b_indexed_negative() {
         let data = [0x59, 0x12, 0xfb, 0xff];
-        let inst = decode(&data, 0);
+        let inst = decode(&data);
         assert_eq!(
             inst,
             Ok(Instruction::Push(Push::new(Source::Indexed((9, -4)), 1))),
@@ -664,7 +664,7 @@ mod tests {
     #[test]
     fn push_w_register_indirect() {
         let data = [0x29, 0x12];
-        let inst = decode(&data, 0);
+        let inst = decode(&data);
         assert_eq!(
             inst,
             Ok(Instruction::Push(Push::new(Source::RegisterIndirect(9), 0)))
@@ -674,7 +674,7 @@ mod tests {
     #[test]
     fn push_b_register_indirect() {
         let data = [0x69, 0x12];
-        let inst = decode(&data, 0);
+        let inst = decode(&data);
         assert_eq!(
             inst,
             Ok(Instruction::Push(Push::new(Source::RegisterIndirect(9), 1)))
@@ -684,7 +684,7 @@ mod tests {
     #[test]
     fn push_w_register_indirect_autoincrement() {
         let data = [0x39, 0x12];
-        let inst = decode(&data, 0);
+        let inst = decode(&data);
         assert_eq!(
             inst,
             Ok(Instruction::Push(Push::new(
@@ -697,7 +697,7 @@ mod tests {
     #[test]
     fn push_b_register_indirect_autoincrement() {
         let data = [0x79, 0x12];
-        let inst = decode(&data, 0);
+        let inst = decode(&data);
         assert_eq!(
             inst,
             Ok(Instruction::Push(Push::new(
@@ -710,7 +710,7 @@ mod tests {
     #[test]
     fn push_const_sr_one() {
         let data = [0x12, 0x12, 0x0, 0x44];
-        let inst = decode(&data, 0);
+        let inst = decode(&data);
         assert_eq!(
             inst,
             Ok(Instruction::Push(Push::new(Source::Absolute(0x4400), 0)))
@@ -720,7 +720,7 @@ mod tests {
     #[test]
     fn push_const_sr_two() {
         let data = [0x22, 0x12];
-        let inst = decode(&data, 0);
+        let inst = decode(&data);
         assert_eq!(
             inst,
             Ok(Instruction::Push(Push::new(Source::Constant(4), 0)))
@@ -730,7 +730,7 @@ mod tests {
     #[test]
     fn push_const_sr_three() {
         let data = [0x32, 0x12];
-        let inst = decode(&data, 0);
+        let inst = decode(&data);
         assert_eq!(
             inst,
             Ok(Instruction::Push(Push::new(Source::Constant(8), 0)))
@@ -740,7 +740,7 @@ mod tests {
     #[test]
     fn push_const_cg_zero() {
         let data = [0x03, 0x12];
-        let inst = decode(&data, 0);
+        let inst = decode(&data);
         assert_eq!(
             inst,
             Ok(Instruction::Push(Push::new(Source::Constant(0), 0)))
@@ -750,7 +750,7 @@ mod tests {
     #[test]
     fn push_const_cg_one() {
         let data = [0x13, 0x12];
-        let inst = decode(&data, 0);
+        let inst = decode(&data);
         assert_eq!(
             inst,
             Ok(Instruction::Push(Push::new(Source::Constant(1), 0)))
@@ -760,7 +760,7 @@ mod tests {
     #[test]
     fn push_const_cg_two() {
         let data = [0x23, 0x12];
-        let inst = decode(&data, 0);
+        let inst = decode(&data);
         assert_eq!(
             inst,
             Ok(Instruction::Push(Push::new(Source::Constant(2), 0)))
@@ -770,7 +770,7 @@ mod tests {
     #[test]
     fn push_const_cg_three() {
         let data = [0x33, 0x12];
-        let inst = decode(&data, 0);
+        let inst = decode(&data);
         assert_eq!(
             inst,
             Ok(Instruction::Push(Push::new(Source::Constant(-1), 0)))
@@ -780,7 +780,7 @@ mod tests {
     #[test]
     fn call_register_direct() {
         let data = [0x89, 0x12];
-        let inst = decode(&data, 0);
+        let inst = decode(&data);
         assert_eq!(
             inst,
             Ok(Instruction::Call(Call::new(Source::RegisterDirect(9))))
@@ -790,7 +790,7 @@ mod tests {
     #[test]
     fn call_register_indexed_positive() {
         let data = [0x99, 0x12, 0x04, 0x00];
-        let inst = decode(&data, 0);
+        let inst = decode(&data);
         assert_eq!(
             inst,
             Ok(Instruction::Call(Call::new(Source::Indexed((9, 4)))))
@@ -800,7 +800,7 @@ mod tests {
     #[test]
     fn call_register_indexed_negative() {
         let data = [0x99, 0x12, 0xfb, 0xff];
-        let inst = decode(&data, 0);
+        let inst = decode(&data);
         assert_eq!(
             inst,
             Ok(Instruction::Call(Call::new(Source::Indexed((9, -4)))))
@@ -810,7 +810,7 @@ mod tests {
     #[test]
     fn call_register_indirect() {
         let data = [0xa9, 0x12];
-        let inst = decode(&data, 0);
+        let inst = decode(&data);
         assert_eq!(
             inst,
             Ok(Instruction::Call(Call::new(Source::RegisterIndirect(9))))
@@ -820,7 +820,7 @@ mod tests {
     #[test]
     fn call_register_indirect_autoincrement() {
         let data = [0xb9, 0x12];
-        let inst = decode(&data, 0);
+        let inst = decode(&data);
         assert_eq!(
             inst,
             Ok(Instruction::Call(Call::new(
@@ -832,21 +832,21 @@ mod tests {
     #[test]
     fn call_pc_symbolic() {
         let data = [0x90, 0x12, 0x2, 0x0];
-        let inst = decode(&data, 0);
+        let inst = decode(&data);
         assert_eq!(inst, Ok(Instruction::Call(Call::new(Source::Symbolic(2)))));
     }
 
     #[test]
     fn call_pc_immediate() {
         let data = [0xb0, 0x12, 0x2, 0x0];
-        let inst = decode(&data, 0);
+        let inst = decode(&data);
         assert_eq!(inst, Ok(Instruction::Call(Call::new(Source::Immediate(2)))));
     }
 
     #[test]
     fn reti() {
         let data = [0x00, 0x13];
-        let inst = decode(&data, 0);
+        let inst = decode(&data);
         assert_eq!(inst, Ok(Instruction::Reti(Reti::new())));
     }
 }

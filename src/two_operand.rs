@@ -50,10 +50,6 @@ impl fmt::Display for Mov {
             WORD_SUFFIX
         };
 
-        if self.destination == Destination::RegisterDirect(0) {
-            return write!(f, "br {}", self.destination);
-        }
-
         if self.source == Source::Constant(0) && self.destination == Destination::RegisterDirect(3)
         {
             return write!(f, "nop");
@@ -65,6 +61,10 @@ impl fmt::Display for Mov {
             } else {
                 return write!(f, "pop {}", self.destination);
             }
+        }
+
+        if self.destination == Destination::RegisterDirect(0) {
+            return write!(f, "br {}", self.destination);
         }
 
         write!(f, "mov{} {}, {}", suffix, self.source, self.destination)

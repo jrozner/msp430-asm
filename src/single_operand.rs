@@ -89,6 +89,10 @@ impl Reti {
     pub fn new() -> Reti {
         Reti {}
     }
+
+    pub fn len(&self) -> usize {
+        2
+    }
 }
 
 impl fmt::Display for Reti {

@@ -43,6 +43,40 @@ pub enum Instruction {
     And(And),
 }
 
+impl Instruction {
+    pub fn len(&self) -> usize {
+        match self {
+            Instruction::Rrc(inst) => inst.len(),
+            Instruction::Swpb(inst) => inst.len(),
+            Instruction::Rra(inst) => inst.len(),
+            Instruction::Sxt(inst) => inst.len(),
+            Instruction::Push(inst) => inst.len(),
+            Instruction::Call(inst) => inst.len(),
+            Instruction::Reti(inst) => inst.len(),
+            Instruction::Jnz(inst) => inst.len(),
+            Instruction::Jz(inst) => inst.len(),
+            Instruction::Jlo(inst) => inst.len(),
+            Instruction::Jc(inst) => inst.len(),
+            Instruction::Jn(inst) => inst.len(),
+            Instruction::Jge(inst) => inst.len(),
+            Instruction::Jl(inst) => inst.len(),
+            Instruction::Jmp(inst) => inst.len(),
+            Instruction::Mov(inst) => inst.len(),
+            Instruction::Add(inst) => inst.len(),
+            Instruction::Addc(inst) => inst.len(),
+            Instruction::Subc(inst) => inst.len(),
+            Instruction::Sub(inst) => inst.len(),
+            Instruction::Cmp(inst) => inst.len(),
+            Instruction::Dadd(inst) => inst.len(),
+            Instruction::Bit(inst) => inst.len(),
+            Instruction::Bic(inst) => inst.len(),
+            Instruction::Bis(inst) => inst.len(),
+            Instruction::Xor(inst) => inst.len(),
+            Instruction::And(inst) => inst.len(),
+        }
+    }
+}
+
 impl fmt::Display for Instruction {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {

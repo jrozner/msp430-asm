@@ -10,7 +10,7 @@ pub mod two_operand;
 use decode_error::DecodeError;
 use instruction::Instruction;
 use jxx::*;
-use operand::{parse_destination, parse_source, Source};
+use operand::{parse_destination, parse_source, OperandWidth};
 use single_operand::*;
 use two_operand::*;
 
@@ -82,7 +82,8 @@ pub fn decode(data: &[u8]) -> Result<Instruction> {
             let opcode = (SINGLE_OPERAND_OPCODE_MASK & first_word) >> 7;
             let register = (SINGLE_OPERAND_REGISTER_MASK & first_word) as u8;
             let source_addressing = (SINGLE_OPERAND_SOURCE_MASK & first_word) >> 4;
-            let operand_width = ((SINGLE_OPERAND_WIDTH_MASK & first_word) >> 6) as u8;
+            let operand_width =
+                OperandWidth::from(((SINGLE_OPERAND_WIDTH_MASK & first_word) >> 6) as u8);
 
             // RETI is a special condition where the source addressing,
             // operand, and operand width are are fixed
@@ -127,7 +128,7 @@ pub fn decode(data: &[u8]) -> Result<Instruction> {
             let opcode = (first_word & TWO_OPERAND_OPCODE_MASK) >> 12;
             let source_register = ((first_word & TWO_OPERAND_SOURCE_MASK) >> 8) as u8;
             let ad = (first_word & TWO_OPERAND_AD_MASK) >> 7;
-            let operand_width = ((first_word & TWO_OPERAND_WIDTH) >> 6) as u8;
+            let operand_width = OperandWidth::from(((first_word & TWO_OPERAND_WIDTH) >> 6) as u8);
             let source_addressing = (first_word & TWO_OPERAND_AS) >> 4;
             let destination_register = (first_word & TWO_OPERAND_DESTINATION) as u8;
 
@@ -215,6 +216,7 @@ fn ones_complement(val: u16) -> i16 {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::operand::Source;
 
     #[test]
     fn empty_data() {
@@ -291,7 +293,10 @@ mod tests {
         let inst = decode(&data);
         assert_eq!(
             inst,
-            Ok(Instruction::Rrc(Rrc::new(Source::RegisterDirect(9), 0)))
+            Ok(Instruction::Rrc(Rrc::new(
+                Source::RegisterDirect(9),
+                OperandWidth::Word
+            )))
         )
     }
 
@@ -301,7 +306,10 @@ mod tests {
         let inst = decode(&data);
         assert_eq!(
             inst,
-            Ok(Instruction::Rrc(Rrc::new(Source::RegisterDirect(9), 1)))
+            Ok(Instruction::Rrc(Rrc::new(
+                Source::RegisterDirect(9),
+                OperandWidth::Byte
+            )))
         );
     }
 
@@ -311,7 +319,10 @@ mod tests {
         let inst = decode(&data);
         assert_eq!(
             inst,
-            Ok(Instruction::Rrc(Rrc::new(Source::Indexed((9, 4)), 0)))
+            Ok(Instruction::Rrc(Rrc::new(
+                Source::Indexed((9, 4)),
+                OperandWidth::Word
+            )))
         );
     }
 
@@ -321,7 +332,10 @@ mod tests {
         let inst = decode(&data);
         assert_eq!(
             inst,
-            Ok(Instruction::Rrc(Rrc::new(Source::Indexed((9, -4)), 0)))
+            Ok(Instruction::Rrc(Rrc::new(
+                Source::Indexed((9, -4)),
+                OperandWidth::Word
+            )))
         );
     }
 
@@ -331,7 +345,10 @@ mod tests {
         let inst = decode(&data);
         assert_eq!(
             inst,
-            Ok(Instruction::Rrc(Rrc::new(Source::Indexed((9, 4)), 1)))
+            Ok(Instruction::Rrc(Rrc::new(
+                Source::Indexed((9, 4)),
+                OperandWidth::Byte
+            )))
         );
     }
 
@@ -341,7 +358,10 @@ mod tests {
         let inst = decode(&data);
         assert_eq!(
             inst,
-            Ok(Instruction::Rrc(Rrc::new(Source::Indexed((9, -4)), 1)))
+            Ok(Instruction::Rrc(Rrc::new(
+                Source::Indexed((9, -4)),
+                OperandWidth::Byte
+            )))
         );
     }
 
@@ -351,7 +371,10 @@ mod tests {
         let inst = decode(&data);
         assert_eq!(
             inst,
-            Ok(Instruction::Rrc(Rrc::new(Source::RegisterIndirect(9), 0)))
+            Ok(Instruction::Rrc(Rrc::new(
+                Source::RegisterIndirect(9),
+                OperandWidth::Word
+            )))
         );
     }
 
@@ -361,7 +384,10 @@ mod tests {
         let inst = decode(&data);
         assert_eq!(
             inst,
-            Ok(Instruction::Rrc(Rrc::new(Source::RegisterIndirect(9), 1)))
+            Ok(Instruction::Rrc(Rrc::new(
+                Source::RegisterIndirect(9),
+                OperandWidth::Byte
+            )))
         );
     }
 
@@ -373,7 +399,7 @@ mod tests {
             inst,
             Ok(Instruction::Rrc(Rrc::new(
                 Source::RegisterIndirectAutoIncrement(9),
-                0
+                OperandWidth::Word
             )))
         );
     }
@@ -386,7 +412,7 @@ mod tests {
             inst,
             Ok(Instruction::Rrc(Rrc::new(
                 Source::RegisterIndirectAutoIncrement(9),
-                1
+                OperandWidth::Byte
             )))
         );
     }
@@ -449,7 +475,10 @@ mod tests {
         let inst = decode(&data);
         assert_eq!(
             inst,
-            Ok(Instruction::Rra(Rra::new(Source::RegisterDirect(9), 0)))
+            Ok(Instruction::Rra(Rra::new(
+                Source::RegisterDirect(9),
+                OperandWidth::Word
+            )))
         );
     }
 
@@ -459,7 +488,10 @@ mod tests {
         let inst = decode(&data);
         assert_eq!(
             inst,
-            Ok(Instruction::Rra(Rra::new(Source::RegisterDirect(9), 1)))
+            Ok(Instruction::Rra(Rra::new(
+                Source::RegisterDirect(9),
+                OperandWidth::Byte
+            )))
         );
     }
 
@@ -469,7 +501,10 @@ mod tests {
         let inst = decode(&data);
         assert_eq!(
             inst,
-            Ok(Instruction::Rra(Rra::new(Source::Indexed((9, 4)), 0)))
+            Ok(Instruction::Rra(Rra::new(
+                Source::Indexed((9, 4)),
+                OperandWidth::Word
+            )))
         );
     }
 
@@ -479,7 +514,10 @@ mod tests {
         let inst = decode(&data);
         assert_eq!(
             inst,
-            Ok(Instruction::Rra(Rra::new(Source::Indexed((9, -4)), 0)))
+            Ok(Instruction::Rra(Rra::new(
+                Source::Indexed((9, -4)),
+                OperandWidth::Word
+            )))
         );
     }
 
@@ -489,7 +527,10 @@ mod tests {
         let inst = decode(&data);
         assert_eq!(
             inst,
-            Ok(Instruction::Rra(Rra::new(Source::Indexed((9, 4)), 1)))
+            Ok(Instruction::Rra(Rra::new(
+                Source::Indexed((9, 4)),
+                OperandWidth::Byte
+            )))
         );
     }
 
@@ -499,7 +540,10 @@ mod tests {
         let inst = decode(&data);
         assert_eq!(
             inst,
-            Ok(Instruction::Rra(Rra::new(Source::Indexed((9, -4)), 1)))
+            Ok(Instruction::Rra(Rra::new(
+                Source::Indexed((9, -4)),
+                OperandWidth::Byte
+            )))
         );
     }
 
@@ -509,7 +553,10 @@ mod tests {
         let inst = decode(&data);
         assert_eq!(
             inst,
-            Ok(Instruction::Rra(Rra::new(Source::RegisterIndirect(9), 0)))
+            Ok(Instruction::Rra(Rra::new(
+                Source::RegisterIndirect(9),
+                OperandWidth::Word
+            )))
         );
     }
 
@@ -519,7 +566,10 @@ mod tests {
         let inst = decode(&data);
         assert_eq!(
             inst,
-            Ok(Instruction::Rra(Rra::new(Source::RegisterIndirect(9), 1)))
+            Ok(Instruction::Rra(Rra::new(
+                Source::RegisterIndirect(9),
+                OperandWidth::Byte
+            )))
         );
     }
 
@@ -531,7 +581,7 @@ mod tests {
             inst,
             Ok(Instruction::Rra(Rra::new(
                 Source::RegisterIndirectAutoIncrement(9),
-                0
+                OperandWidth::Word
             )))
         );
     }
@@ -544,7 +594,7 @@ mod tests {
             inst,
             Ok(Instruction::Rra(Rra::new(
                 Source::RegisterIndirectAutoIncrement(9),
-                1
+                OperandWidth::Byte
             )))
         );
     }
@@ -607,7 +657,10 @@ mod tests {
         let inst = decode(&data);
         assert_eq!(
             inst,
-            Ok(Instruction::Push(Push::new(Source::RegisterDirect(9), 0)))
+            Ok(Instruction::Push(Push::new(
+                Source::RegisterDirect(9),
+                OperandWidth::Word
+            )))
         );
     }
 
@@ -617,7 +670,10 @@ mod tests {
         let inst = decode(&data);
         assert_eq!(
             inst,
-            Ok(Instruction::Push(Push::new(Source::RegisterDirect(9), 1)))
+            Ok(Instruction::Push(Push::new(
+                Source::RegisterDirect(9),
+                OperandWidth::Byte
+            )))
         );
     }
 
@@ -627,7 +683,10 @@ mod tests {
         let inst = decode(&data);
         assert_eq!(
             inst,
-            Ok(Instruction::Push(Push::new(Source::Indexed((9, 4)), 0)))
+            Ok(Instruction::Push(Push::new(
+                Source::Indexed((9, 4)),
+                OperandWidth::Word
+            )))
         );
     }
 
@@ -637,7 +696,10 @@ mod tests {
         let inst = decode(&data);
         assert_eq!(
             inst,
-            Ok(Instruction::Push(Push::new(Source::Indexed((9, -4)), 0)))
+            Ok(Instruction::Push(Push::new(
+                Source::Indexed((9, -4)),
+                OperandWidth::Word
+            )))
         );
     }
 
@@ -647,7 +709,10 @@ mod tests {
         let inst = decode(&data);
         assert_eq!(
             inst,
-            Ok(Instruction::Push(Push::new(Source::Indexed((9, 4)), 1)))
+            Ok(Instruction::Push(Push::new(
+                Source::Indexed((9, 4)),
+                OperandWidth::Byte
+            )))
         );
     }
 
@@ -657,7 +722,10 @@ mod tests {
         let inst = decode(&data);
         assert_eq!(
             inst,
-            Ok(Instruction::Push(Push::new(Source::Indexed((9, -4)), 1))),
+            Ok(Instruction::Push(Push::new(
+                Source::Indexed((9, -4)),
+                OperandWidth::Byte
+            ))),
         );
     }
 
@@ -667,7 +735,10 @@ mod tests {
         let inst = decode(&data);
         assert_eq!(
             inst,
-            Ok(Instruction::Push(Push::new(Source::RegisterIndirect(9), 0)))
+            Ok(Instruction::Push(Push::new(
+                Source::RegisterIndirect(9),
+                OperandWidth::Word
+            )))
         );
     }
 
@@ -677,7 +748,10 @@ mod tests {
         let inst = decode(&data);
         assert_eq!(
             inst,
-            Ok(Instruction::Push(Push::new(Source::RegisterIndirect(9), 1)))
+            Ok(Instruction::Push(Push::new(
+                Source::RegisterIndirect(9),
+                OperandWidth::Byte
+            )))
         );
     }
 
@@ -689,7 +763,7 @@ mod tests {
             inst,
             Ok(Instruction::Push(Push::new(
                 Source::RegisterIndirectAutoIncrement(9),
-                0
+                OperandWidth::Word
             )))
         );
     }
@@ -702,7 +776,7 @@ mod tests {
             inst,
             Ok(Instruction::Push(Push::new(
                 Source::RegisterIndirectAutoIncrement(9),
-                1
+                OperandWidth::Byte
             )))
         );
     }
@@ -713,7 +787,10 @@ mod tests {
         let inst = decode(&data);
         assert_eq!(
             inst,
-            Ok(Instruction::Push(Push::new(Source::Absolute(0x4400), 0)))
+            Ok(Instruction::Push(Push::new(
+                Source::Absolute(0x4400),
+                OperandWidth::Word
+            )))
         );
     }
 
@@ -723,7 +800,10 @@ mod tests {
         let inst = decode(&data);
         assert_eq!(
             inst,
-            Ok(Instruction::Push(Push::new(Source::Constant(4), 0)))
+            Ok(Instruction::Push(Push::new(
+                Source::Constant(4),
+                OperandWidth::Word
+            )))
         );
     }
 
@@ -733,7 +813,10 @@ mod tests {
         let inst = decode(&data);
         assert_eq!(
             inst,
-            Ok(Instruction::Push(Push::new(Source::Constant(8), 0)))
+            Ok(Instruction::Push(Push::new(
+                Source::Constant(8),
+                OperandWidth::Word
+            )))
         );
     }
 
@@ -743,7 +826,10 @@ mod tests {
         let inst = decode(&data);
         assert_eq!(
             inst,
-            Ok(Instruction::Push(Push::new(Source::Constant(0), 0)))
+            Ok(Instruction::Push(Push::new(
+                Source::Constant(0),
+                OperandWidth::Word
+            )))
         );
     }
 
@@ -753,7 +839,10 @@ mod tests {
         let inst = decode(&data);
         assert_eq!(
             inst,
-            Ok(Instruction::Push(Push::new(Source::Constant(1), 0)))
+            Ok(Instruction::Push(Push::new(
+                Source::Constant(1),
+                OperandWidth::Word
+            )))
         );
     }
 
@@ -763,7 +852,10 @@ mod tests {
         let inst = decode(&data);
         assert_eq!(
             inst,
-            Ok(Instruction::Push(Push::new(Source::Constant(2), 0)))
+            Ok(Instruction::Push(Push::new(
+                Source::Constant(2),
+                OperandWidth::Word
+            )))
         );
     }
 
@@ -773,7 +865,10 @@ mod tests {
         let inst = decode(&data);
         assert_eq!(
             inst,
-            Ok(Instruction::Push(Push::new(Source::Constant(-1), 0)))
+            Ok(Instruction::Push(Push::new(
+                Source::Constant(-1),
+                OperandWidth::Word
+            )))
         );
     }
 

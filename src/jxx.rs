@@ -8,28 +8,40 @@ pub fn jxx_fix_offset(offset: u16) -> i16 {
     }
 }
 
+pub trait Jxx {
+    fn mnemonic(&self) -> &str;
+    fn offset(&self) -> i16;
+    fn len(&self) -> usize;
+}
+
 macro_rules! jxx {
-    ($e:ident, $n:expr) => {
+    ($t:ident, $n:expr) => {
         #[derive(Debug, Clone, Copy, PartialEq)]
-        pub struct $e {
+        pub struct $t {
             offset: i16,
         }
 
-        impl $e {
-            pub fn new(offset: i16) -> $e {
-                $e { offset: offset }
+        impl $t {
+            pub fn new(offset: i16) -> $t {
+                $t { offset: offset }
+            }
+        }
+
+        impl Jxx for $t {
+            fn mnemonic(&self) -> &str {
+                $n
             }
 
-            pub fn offset(&self) -> i16 {
+            fn offset(&self) -> i16 {
                 self.offset
             }
 
-            pub fn len(&self) -> usize {
+            fn len(&self) -> usize {
                 2
             }
         }
 
-        impl fmt::Display for $e {
+        impl fmt::Display for $t {
             fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
                 // LowerHex will treat hex numbers as unsigned so rather than
                 // -0x6 we get 0xfffa. This is expected functionality and

@@ -1,50 +1,72 @@
 use std::fmt;
 
 use crate::instruction::{BYTE_SUFFIX, WORD_SUFFIX};
-use crate::operand::{Destination, Source};
+use crate::operand::{Destination, HasWidth, OperandWidth, Source};
+
+pub trait TwoOperand {
+    fn mnemonic(&self) -> &str;
+    fn source(&self) -> &Source;
+    fn destination(&self) -> &Destination;
+    fn len(&self) -> usize;
+}
 
 macro_rules! two_operand {
-    ($e:ident) => {
+    ($t:ident, $n:expr) => {
         #[derive(Debug, Clone, PartialEq)]
-        pub struct $e {
+        pub struct $t {
             source: Source,
-            operand_width: u8,
+            operand_width: OperandWidth,
             destination: Destination,
         }
 
-        impl $e {
-            pub fn new(source: Source, operand_width: u8, destination: Destination) -> $e {
-                $e {
+        impl $t {
+            pub fn new(
+                source: Source,
+                operand_width: OperandWidth,
+                destination: Destination,
+            ) -> $t {
+                $t {
                     source: source,
                     operand_width: operand_width,
                     destination: destination,
                 }
             }
+        }
 
-            pub fn source(&self) -> &Source {
+        impl TwoOperand for $t {
+            fn mnemonic(&self) -> &str {
+                match self.operand_width {
+                    OperandWidth::Word => $n,
+                    OperandWidth::Byte => concat!($n, ".b"),
+                }
+            }
+
+            fn source(&self) -> &Source {
                 &self.source
             }
 
-            pub fn operand_width(&self) -> u8 {
-                self.operand_width
-            }
-
-            pub fn destination(&self) -> &Destination {
+            fn destination(&self) -> &Destination {
                 &self.destination
             }
 
-            pub fn len(&self) -> usize {
+            fn len(&self) -> usize {
                 2 + self.source.len() + self.destination.len()
+            }
+        }
+
+        impl HasWidth for $t {
+            fn operand_width(&self) -> &OperandWidth {
+                &self.operand_width
             }
         }
     };
 }
 
-two_operand!(Mov);
+two_operand!(Mov, "mov");
 
 impl fmt::Display for Mov {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let suffix = if self.operand_width == 1 {
+        let suffix = if self.operand_width == OperandWidth::Byte {
             BYTE_SUFFIX
         } else {
             WORD_SUFFIX
@@ -71,11 +93,11 @@ impl fmt::Display for Mov {
     }
 }
 
-two_operand!(Add);
+two_operand!(Add, "add");
 
 impl fmt::Display for Add {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let suffix = if self.operand_width == 1 {
+        let suffix = if self.operand_width == OperandWidth::Byte {
             BYTE_SUFFIX
         } else {
             WORD_SUFFIX
@@ -93,11 +115,11 @@ impl fmt::Display for Add {
     }
 }
 
-two_operand!(Addc);
+two_operand!(Addc, "addc");
 
 impl fmt::Display for Addc {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let suffix = if self.operand_width == 1 {
+        let suffix = if self.operand_width == OperandWidth::Byte {
             BYTE_SUFFIX
         } else {
             WORD_SUFFIX
@@ -113,11 +135,11 @@ impl fmt::Display for Addc {
     }
 }
 
-two_operand!(Subc);
+two_operand!(Subc, "subc");
 
 impl fmt::Display for Subc {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let suffix = if self.operand_width == 1 {
+        let suffix = if self.operand_width == OperandWidth::Byte {
             BYTE_SUFFIX
         } else {
             WORD_SUFFIX
@@ -131,11 +153,11 @@ impl fmt::Display for Subc {
     }
 }
 
-two_operand!(Sub);
+two_operand!(Sub, "sub");
 
 impl fmt::Display for Sub {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let suffix = if self.operand_width == 1 {
+        let suffix = if self.operand_width == OperandWidth::Byte {
             BYTE_SUFFIX
         } else {
             WORD_SUFFIX
@@ -151,11 +173,11 @@ impl fmt::Display for Sub {
     }
 }
 
-two_operand!(Cmp);
+two_operand!(Cmp, "cmp");
 
 impl fmt::Display for Cmp {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let suffix = if self.operand_width == 1 {
+        let suffix = if self.operand_width == OperandWidth::Byte {
             BYTE_SUFFIX
         } else {
             WORD_SUFFIX
@@ -169,11 +191,11 @@ impl fmt::Display for Cmp {
     }
 }
 
-two_operand!(Dadd);
+two_operand!(Dadd, "dadd");
 
 impl fmt::Display for Dadd {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let suffix = if self.operand_width == 1 {
+        let suffix = if self.operand_width == OperandWidth::Byte {
             BYTE_SUFFIX
         } else {
             WORD_SUFFIX
@@ -187,11 +209,11 @@ impl fmt::Display for Dadd {
     }
 }
 
-two_operand!(Bit);
+two_operand!(Bit, "bit");
 
 impl fmt::Display for Bit {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let suffix = if self.operand_width == 1 {
+        let suffix = if self.operand_width == OperandWidth::Byte {
             BYTE_SUFFIX
         } else {
             WORD_SUFFIX
@@ -201,11 +223,11 @@ impl fmt::Display for Bit {
     }
 }
 
-two_operand!(Bic);
+two_operand!(Bic, "bic");
 
 impl fmt::Display for Bic {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let suffix = if self.operand_width == 1 {
+        let suffix = if self.operand_width == OperandWidth::Byte {
             BYTE_SUFFIX
         } else {
             WORD_SUFFIX
@@ -225,11 +247,11 @@ impl fmt::Display for Bic {
     }
 }
 
-two_operand!(Bis);
+two_operand!(Bis, "bis");
 
 impl fmt::Display for Bis {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let suffix = if self.operand_width == 1 {
+        let suffix = if self.operand_width == OperandWidth::Byte {
             BYTE_SUFFIX
         } else {
             WORD_SUFFIX
@@ -249,11 +271,11 @@ impl fmt::Display for Bis {
     }
 }
 
-two_operand!(Xor);
+two_operand!(Xor, "xor");
 
 impl fmt::Display for Xor {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let suffix = if self.operand_width == 1 {
+        let suffix = if self.operand_width == OperandWidth::Byte {
             BYTE_SUFFIX
         } else {
             WORD_SUFFIX
@@ -267,11 +289,11 @@ impl fmt::Display for Xor {
     }
 }
 
-two_operand!(And);
+two_operand!(And, "and");
 
 impl fmt::Display for And {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let suffix = if self.operand_width == 1 {
+        let suffix = if self.operand_width == OperandWidth::Byte {
             BYTE_SUFFIX
         } else {
             WORD_SUFFIX

@@ -194,6 +194,22 @@ impl fmt::Display for Destination {
     }
 }
 
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub enum OperandWidth {
+    Byte,
+    Word,
+}
+
+impl From<u8> for OperandWidth {
+    fn from(val: u8) -> Self {
+        match val {
+            0 => OperandWidth::Word,
+            1 => OperandWidth::Byte,
+            _ => unreachable!(),
+        }
+    }
+}
+
 pub fn parse_source(register: u8, source: u16, data: &[u8]) -> Result<(Source, &[u8])> {
     match register {
         0 => match source {
@@ -281,6 +297,11 @@ pub fn parse_destination(register: u8, source: u16, data: &[u8]) -> Result<Desti
     }
 }
 
+pub trait HasWidth {
+    fn operand_width(&self) -> &OperandWidth;
+}
+
+#[cfg(test)]
 mod tests {
     use super::*;
 

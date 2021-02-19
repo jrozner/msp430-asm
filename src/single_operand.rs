@@ -1,30 +1,42 @@
 use std::fmt;
 
 use crate::instruction::{BYTE_SUFFIX, WORD_SUFFIX};
-use crate::Source;
+use crate::operand::{HasWidth, OperandWidth, Source};
+
+pub trait SingleOperand {
+    fn mnemonic(&self) -> &str;
+    fn source(&self) -> &Source;
+    fn len(&self) -> usize;
+}
 
 macro_rules! single_operand {
-    ($e:ident, $n:expr) => {
+    ($t:ident, $n:expr) => {
         #[derive(Debug, Clone, PartialEq)]
-        pub struct $e {
+        pub struct $t {
             source: Source,
         }
 
-        impl $e {
-            pub fn new(source: Source) -> $e {
-                $e { source: source }
+        impl $t {
+            pub fn new(source: Source) -> $t {
+                $t { source: source }
+            }
+        }
+
+        impl SingleOperand for $t {
+            fn mnemonic(&self) -> &str {
+                $n
             }
 
-            pub fn source(&self) -> &Source {
+            fn source(&self) -> &Source {
                 &self.source
             }
 
-            pub fn len(&self) -> usize {
+            fn len(&self) -> usize {
                 2 + self.source.len()
             }
         }
 
-        impl fmt::Display for $e {
+        impl fmt::Display for $t {
             fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
                 write!(f, "{} {}", $n, self.source)
             }
@@ -33,37 +45,48 @@ macro_rules! single_operand {
 }
 
 macro_rules! single_operand_width {
-    ($e:ident, $n:expr) => {
+    ($t:ident, $n:expr) => {
         #[derive(Debug, Clone, PartialEq)]
-        pub struct $e {
+        pub struct $t {
             source: Source,
-            operand_width: u8,
+            operand_width: OperandWidth,
         }
 
-        impl $e {
-            pub fn new(source: Source, operand_width: u8) -> $e {
-                $e {
+        impl $t {
+            pub fn new(source: Source, operand_width: OperandWidth) -> $t {
+                $t {
                     source: source,
                     operand_width: operand_width,
                 }
             }
+        }
 
-            pub fn source(&self) -> &Source {
+        impl SingleOperand for $t {
+            fn mnemonic(&self) -> &str {
+                match self.operand_width {
+                    OperandWidth::Word => $n,
+                    OperandWidth::Byte => concat!($n, ".b"),
+                }
+            }
+
+            fn source(&self) -> &Source {
                 &self.source
             }
 
-            pub fn operand_width(&self) -> u8 {
-                self.operand_width
-            }
-
-            pub fn len(&self) -> usize {
+            fn len(&self) -> usize {
                 2 + self.source.len()
             }
         }
 
-        impl fmt::Display for $e {
+        impl HasWidth for $t {
+            fn operand_width(&self) -> &OperandWidth {
+                &self.operand_width
+            }
+        }
+
+        impl fmt::Display for $t {
             fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-                let suffix = if self.operand_width == 1 {
+                let suffix = if self.operand_width == OperandWidth::Byte {
                     BYTE_SUFFIX
                 } else {
                     WORD_SUFFIX

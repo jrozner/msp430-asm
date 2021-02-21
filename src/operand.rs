@@ -112,8 +112,21 @@ impl std::cmp::PartialEq<Destination> for Source {
             } else {
                 false
             }
+        } else if let Destination::Symbolic(dest_i) = other {
+            if let Source::Symbolic(src_i) = self {
+                return dest_i == src_i;
+            } else {
+                false
+            }
+        } else if let Destination::Absolute(dest_a) = other {
+            if let Source::Absolute(src_a) = self {
+                return src_a == dest_a;
+            } else {
+                false
+            }
         } else {
-            return false;
+            // this should be unreachable
+            false
         }
     }
 }
@@ -122,13 +135,15 @@ impl std::cmp::PartialEq<Destination> for Source {
 pub enum Destination {
     RegisterDirect(u8),
     Indexed((u8, i16)),
+    Symbolic(i16),
+    Absolute(u16),
 }
 
 impl Destination {
     pub fn len(&self) -> usize {
         match self {
             Destination::RegisterDirect(_) => 0,
-            Destination::Indexed(_) => 2,
+            Destination::Indexed(_) | Destination::Symbolic(_) | Destination::Absolute(_) => 2,
         }
     }
 }
@@ -144,25 +159,11 @@ impl fmt::Display for Destination {
                 _ => write!(f, "r{}", r),
             },
             Destination::Indexed((r, i)) => match r {
-                0 => {
-                    if *i >= 0 {
-                        write!(f, "{:#x}(pc)", i)
-                    } else {
-                        write!(f, "-{:#x}(pc)", i * -1)
-                    }
-                }
                 1 => {
                     if *i >= 0 {
                         write!(f, "{:#x}(sp)", i)
                     } else {
                         write!(f, "-{:#x}(sp)", i * -1)
-                    }
-                }
-                2 => {
-                    if *i >= 0 {
-                        write!(f, "{:#x}(sr)", i)
-                    } else {
-                        write!(f, "-{:#x}(sr)", i * -1)
                     }
                 }
                 3 => {
@@ -172,14 +173,23 @@ impl fmt::Display for Destination {
                         write!(f, "-{:#x}(cg)", i * -1)
                     }
                 }
-                _ => {
+                4..=15 => {
                     if *i >= 0 {
                         write!(f, "{:#x}(r{})", i, r)
                     } else {
                         write!(f, "-{:#x}(r{})", i * -1, r)
                     }
                 }
+                _ => unreachable!(),
             },
+            Destination::Symbolic(i) => {
+                if *i >= 0 {
+                    write!(f, "#{:#x}(pc)", i)
+                } else {
+                    write!(f, "#-{:#x}(pc)", i * -1)
+                }
+            }
+            Destination::Absolute(a) => write!(f, "&{:#x}", a),
         }
     }
 }
@@ -257,8 +267,14 @@ pub fn parse_destination(register: u8, source: u16, data: &[u8]) -> Result<Desti
                 Err(DecodeError::MissingDestination)
             } else {
                 let (bytes, _) = data[0..2].split_at(std::mem::size_of::<u16>());
-                let index = ones_complement(u16::from_le_bytes(bytes.try_into().unwrap()));
-                Ok(Destination::Indexed((register, index)))
+                let raw_operand = u16::from_le_bytes(bytes.try_into().unwrap());
+                let index = ones_complement(raw_operand);
+                match register {
+                    0 => Ok(Destination::Symbolic(index)),
+                    2 => Ok(Destination::Absolute(raw_operand)),
+                    1 | 3..=15 => Ok(Destination::Indexed((register, index))),
+                    _ => Err(DecodeError::InvalidDestination),
+                }
             }
         }
         _ => Err(DecodeError::InvalidDestination),
@@ -437,6 +453,34 @@ mod tests {
         let data = [0x2, 0x0];
         let destination = parse_destination(9, 1, &data);
         assert_eq!(destination, Ok(Destination::Indexed((9, 2))));
+    }
+
+    #[test]
+    fn destination_register_indexed_negative() {
+        let data = [0xfe, 0xff];
+        let destination = parse_destination(9, 1, &data);
+        assert_eq!(destination, Ok(Destination::Indexed((9, -1))));
+    }
+
+    #[test]
+    fn destination_register_symbolic() {
+        let data = [0x2, 0x0];
+        let destination = parse_destination(0, 1, &data);
+        assert_eq!(destination, Ok(Destination::Symbolic(2)));
+    }
+
+    #[test]
+    fn destination_register_symbolic_negative() {
+        let data = [0xfe, 0xff];
+        let destination = parse_destination(0, 1, &data);
+        assert_eq!(destination, Ok(Destination::Symbolic(-1)));
+    }
+
+    #[test]
+    fn destination_register_absolute() {
+        let data = [0x2, 0x0];
+        let destination = parse_destination(2, 1, &data);
+        assert_eq!(destination, Ok(Destination::Absolute(2)));
     }
 
     #[test]

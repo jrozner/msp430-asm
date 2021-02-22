@@ -5,7 +5,7 @@ use crate::ones_complement;
 use crate::DecodeError;
 use crate::Result;
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub enum Source {
     RegisterDirect(u8),
     Indexed((u8, i16)),
@@ -131,7 +131,7 @@ impl std::cmp::PartialEq<Destination> for Source {
     }
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub enum Destination {
     RegisterDirect(u8),
     Indexed((u8, i16)),
@@ -295,10 +295,6 @@ pub fn parse_destination(register: u8, source: u16, data: &[u8]) -> Result<Desti
         }
         _ => Err(DecodeError::InvalidDestination),
     }
-}
-
-pub trait HasWidth {
-    fn operand_width(&self) -> &OperandWidth;
 }
 
 #[cfg(test)]

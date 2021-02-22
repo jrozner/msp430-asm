@@ -1,6 +1,7 @@
 use std::convert::TryInto;
 
 pub mod decode_error;
+pub mod emulate;
 pub mod instruction;
 pub mod jxx;
 pub mod operand;
@@ -8,6 +9,7 @@ pub mod single_operand;
 pub mod two_operand;
 
 use decode_error::DecodeError;
+use emulate::Emulate;
 use instruction::Instruction;
 use jxx::*;
 use operand::{parse_destination, parse_source, OperandWidth};
@@ -94,12 +96,12 @@ pub fn decode(data: &[u8]) -> Result<Instruction> {
             let (source, _) = operand::parse_source(register, source_addressing, remaining_data)?;
 
             match opcode {
-                RRC_OPCODE => Ok(Instruction::Rrc(Rrc::new(source, operand_width))),
-                SWPB_OPCODE => Ok(Instruction::Swpb(Swpb::new(source))),
-                RRA_OPCODE => Ok(Instruction::Rra(Rra::new(source, operand_width))),
-                SXT_OPCODE => Ok(Instruction::Sxt(Sxt::new(source))),
-                PUSH_OPCODE => Ok(Instruction::Push(Push::new(source, operand_width))),
-                CALL_OPCODE => Ok(Instruction::Call(Call::new(source))),
+                RRC_OPCODE => Ok(Instruction::Rrc(Rrc::new(source, Some(operand_width)))),
+                SWPB_OPCODE => Ok(Instruction::Swpb(Swpb::new(source, None))),
+                RRA_OPCODE => Ok(Instruction::Rra(Rra::new(source, Some(operand_width)))),
+                SXT_OPCODE => Ok(Instruction::Sxt(Sxt::new(source, None))),
+                PUSH_OPCODE => Ok(Instruction::Push(Push::new(source, Some(operand_width)))),
+                CALL_OPCODE => Ok(Instruction::Call(Call::new(source, None))),
                 _ => Err(DecodeError::InvalidOpcode(opcode)),
             }
         }
@@ -139,61 +141,81 @@ pub fn decode(data: &[u8]) -> Result<Instruction> {
             let destination = parse_destination(destination_register, ad, remaining_data)?;
 
             match opcode {
-                MOV_OPCODE => Ok(Instruction::Mov(Mov::new(
-                    source,
-                    operand_width,
-                    destination,
-                ))),
-                ADD_OPCODE => Ok(Instruction::Add(Add::new(
-                    source,
-                    operand_width,
-                    destination,
-                ))),
-                ADDC_OPCODE => Ok(Instruction::Addc(Addc::new(
-                    source,
-                    operand_width,
-                    destination,
-                ))),
-                SUBC_OPCODE => Ok(Instruction::Subc(Subc::new(
-                    source,
-                    operand_width,
-                    destination,
-                ))),
-                SUB_OPCODE => Ok(Instruction::Sub(Sub::new(
-                    source,
-                    operand_width,
-                    destination,
-                ))),
-                CMP_OPCODE => Ok(Instruction::Cmp(Cmp::new(
-                    source,
-                    operand_width,
-                    destination,
-                ))),
-                DADD_OPCODE => Ok(Instruction::Dadd(Dadd::new(
-                    source,
-                    operand_width,
-                    destination,
-                ))),
+                MOV_OPCODE => {
+                    let inst = Mov::new(source, operand_width, destination);
+                    match inst.emulate() {
+                        Some(inst) => Ok(inst),
+                        None => Ok(Instruction::Mov(inst)),
+                    }
+                }
+                ADD_OPCODE => {
+                    let inst = Add::new(source, operand_width, destination);
+                    match inst.emulate() {
+                        Some(inst) => Ok(inst),
+                        None => Ok(Instruction::Add(inst)),
+                    }
+                }
+                ADDC_OPCODE => {
+                    let inst = Addc::new(source, operand_width, destination);
+                    match inst.emulate() {
+                        Some(inst) => Ok(inst),
+                        None => Ok(Instruction::Addc(inst)),
+                    }
+                }
+                SUBC_OPCODE => {
+                    let inst = Subc::new(source, operand_width, destination);
+                    match inst.emulate() {
+                        Some(inst) => Ok(inst),
+                        None => Ok(Instruction::Subc(inst)),
+                    }
+                }
+                SUB_OPCODE => {
+                    let inst = Sub::new(source, operand_width, destination);
+                    match inst.emulate() {
+                        Some(inst) => Ok(inst),
+                        None => Ok(Instruction::Sub(inst)),
+                    }
+                }
+                CMP_OPCODE => {
+                    let inst = Cmp::new(source, operand_width, destination);
+                    match inst.emulate() {
+                        Some(inst) => Ok(inst),
+                        None => Ok(Instruction::Cmp(inst)),
+                    }
+                }
+                DADD_OPCODE => {
+                    let inst = Dadd::new(source, operand_width, destination);
+                    match inst.emulate() {
+                        Some(inst) => Ok(inst),
+                        None => Ok(Instruction::Dadd(inst)),
+                    }
+                }
                 BIT_OPCODE => Ok(Instruction::Bit(Bit::new(
                     source,
                     operand_width,
                     destination,
                 ))),
-                BIC_OPCODE => Ok(Instruction::Bic(Bic::new(
-                    source,
-                    operand_width,
-                    destination,
-                ))),
-                BIS_OPCODE => Ok(Instruction::Bis(Bis::new(
-                    source,
-                    operand_width,
-                    destination,
-                ))),
-                XOR_OPCODE => Ok(Instruction::Xor(Xor::new(
-                    source,
-                    operand_width,
-                    destination,
-                ))),
+                BIC_OPCODE => {
+                    let inst = Bic::new(source, operand_width, destination);
+                    match inst.emulate() {
+                        Some(inst) => Ok(inst),
+                        None => Ok(Instruction::Bic(inst)),
+                    }
+                }
+                BIS_OPCODE => {
+                    let inst = Bis::new(source, operand_width, destination);
+                    match inst.emulate() {
+                        Some(inst) => Ok(inst),
+                        None => Ok(Instruction::Bis(inst)),
+                    }
+                }
+                XOR_OPCODE => {
+                    let inst = Xor::new(source, operand_width, destination);
+                    match inst.emulate() {
+                        Some(inst) => Ok(inst),
+                        None => Ok(Instruction::Xor(inst)),
+                    }
+                }
                 AND_OPCODE => Ok(Instruction::And(And::new(
                     source,
                     operand_width,
@@ -295,7 +317,7 @@ mod tests {
             inst,
             Ok(Instruction::Rrc(Rrc::new(
                 Source::RegisterDirect(9),
-                OperandWidth::Word
+                Some(OperandWidth::Word)
             )))
         )
     }
@@ -308,7 +330,7 @@ mod tests {
             inst,
             Ok(Instruction::Rrc(Rrc::new(
                 Source::RegisterDirect(9),
-                OperandWidth::Byte
+                Some(OperandWidth::Byte)
             )))
         );
     }
@@ -321,7 +343,7 @@ mod tests {
             inst,
             Ok(Instruction::Rrc(Rrc::new(
                 Source::Indexed((9, 4)),
-                OperandWidth::Word
+                Some(OperandWidth::Word)
             )))
         );
     }
@@ -334,7 +356,7 @@ mod tests {
             inst,
             Ok(Instruction::Rrc(Rrc::new(
                 Source::Indexed((9, -4)),
-                OperandWidth::Word
+                Some(OperandWidth::Word)
             )))
         );
     }
@@ -347,7 +369,7 @@ mod tests {
             inst,
             Ok(Instruction::Rrc(Rrc::new(
                 Source::Indexed((9, 4)),
-                OperandWidth::Byte
+                Some(OperandWidth::Byte)
             )))
         );
     }
@@ -360,7 +382,7 @@ mod tests {
             inst,
             Ok(Instruction::Rrc(Rrc::new(
                 Source::Indexed((9, -4)),
-                OperandWidth::Byte
+                Some(OperandWidth::Byte)
             )))
         );
     }
@@ -373,7 +395,7 @@ mod tests {
             inst,
             Ok(Instruction::Rrc(Rrc::new(
                 Source::RegisterIndirect(9),
-                OperandWidth::Word
+                Some(OperandWidth::Word)
             )))
         );
     }
@@ -386,7 +408,7 @@ mod tests {
             inst,
             Ok(Instruction::Rrc(Rrc::new(
                 Source::RegisterIndirect(9),
-                OperandWidth::Byte
+                Some(OperandWidth::Byte)
             )))
         );
     }
@@ -399,7 +421,7 @@ mod tests {
             inst,
             Ok(Instruction::Rrc(Rrc::new(
                 Source::RegisterIndirectAutoIncrement(9),
-                OperandWidth::Word
+                Some(OperandWidth::Word)
             )))
         );
     }
@@ -412,7 +434,7 @@ mod tests {
             inst,
             Ok(Instruction::Rrc(Rrc::new(
                 Source::RegisterIndirectAutoIncrement(9),
-                OperandWidth::Byte
+                Some(OperandWidth::Byte)
             )))
         );
     }
@@ -423,7 +445,10 @@ mod tests {
         let inst = decode(&data);
         assert_eq!(
             inst,
-            Ok(Instruction::Swpb(Swpb::new(Source::RegisterDirect(9))))
+            Ok(Instruction::Swpb(Swpb::new(
+                Source::RegisterDirect(9),
+                None
+            )))
         );
     }
 
@@ -433,7 +458,7 @@ mod tests {
         let inst = decode(&data);
         assert_eq!(
             inst,
-            Ok(Instruction::Swpb(Swpb::new(Source::Indexed((9, 4)))))
+            Ok(Instruction::Swpb(Swpb::new(Source::Indexed((9, 4)), None)))
         );
     }
 
@@ -443,7 +468,7 @@ mod tests {
         let inst = decode(&data);
         assert_eq!(
             inst,
-            Ok(Instruction::Swpb(Swpb::new(Source::Indexed((9, -4)))))
+            Ok(Instruction::Swpb(Swpb::new(Source::Indexed((9, -4)), None)))
         );
     }
 
@@ -453,7 +478,10 @@ mod tests {
         let inst = decode(&data);
         assert_eq!(
             inst,
-            Ok(Instruction::Swpb(Swpb::new(Source::RegisterIndirect(9))))
+            Ok(Instruction::Swpb(Swpb::new(
+                Source::RegisterIndirect(9),
+                None
+            )))
         );
     }
 
@@ -464,7 +492,8 @@ mod tests {
         assert_eq!(
             inst,
             Ok(Instruction::Swpb(Swpb::new(
-                Source::RegisterIndirectAutoIncrement(9)
+                Source::RegisterIndirectAutoIncrement(9),
+                None
             )))
         );
     }
@@ -477,7 +506,7 @@ mod tests {
             inst,
             Ok(Instruction::Rra(Rra::new(
                 Source::RegisterDirect(9),
-                OperandWidth::Word
+                Some(OperandWidth::Word)
             )))
         );
     }
@@ -490,7 +519,7 @@ mod tests {
             inst,
             Ok(Instruction::Rra(Rra::new(
                 Source::RegisterDirect(9),
-                OperandWidth::Byte
+                Some(OperandWidth::Byte)
             )))
         );
     }
@@ -503,7 +532,7 @@ mod tests {
             inst,
             Ok(Instruction::Rra(Rra::new(
                 Source::Indexed((9, 4)),
-                OperandWidth::Word
+                Some(OperandWidth::Word)
             )))
         );
     }
@@ -516,7 +545,7 @@ mod tests {
             inst,
             Ok(Instruction::Rra(Rra::new(
                 Source::Indexed((9, -4)),
-                OperandWidth::Word
+                Some(OperandWidth::Word)
             )))
         );
     }
@@ -529,7 +558,7 @@ mod tests {
             inst,
             Ok(Instruction::Rra(Rra::new(
                 Source::Indexed((9, 4)),
-                OperandWidth::Byte
+                Some(OperandWidth::Byte)
             )))
         );
     }
@@ -542,7 +571,7 @@ mod tests {
             inst,
             Ok(Instruction::Rra(Rra::new(
                 Source::Indexed((9, -4)),
-                OperandWidth::Byte
+                Some(OperandWidth::Byte)
             )))
         );
     }
@@ -555,7 +584,7 @@ mod tests {
             inst,
             Ok(Instruction::Rra(Rra::new(
                 Source::RegisterIndirect(9),
-                OperandWidth::Word
+                Some(OperandWidth::Word)
             )))
         );
     }
@@ -568,7 +597,7 @@ mod tests {
             inst,
             Ok(Instruction::Rra(Rra::new(
                 Source::RegisterIndirect(9),
-                OperandWidth::Byte
+                Some(OperandWidth::Byte)
             )))
         );
     }
@@ -581,7 +610,7 @@ mod tests {
             inst,
             Ok(Instruction::Rra(Rra::new(
                 Source::RegisterIndirectAutoIncrement(9),
-                OperandWidth::Word
+                Some(OperandWidth::Word)
             )))
         );
     }
@@ -594,7 +623,7 @@ mod tests {
             inst,
             Ok(Instruction::Rra(Rra::new(
                 Source::RegisterIndirectAutoIncrement(9),
-                OperandWidth::Byte
+                Some(OperandWidth::Byte)
             )))
         );
     }
@@ -605,7 +634,7 @@ mod tests {
         let inst = decode(&data);
         assert_eq!(
             inst,
-            Ok(Instruction::Sxt(Sxt::new(Source::RegisterDirect(9))))
+            Ok(Instruction::Sxt(Sxt::new(Source::RegisterDirect(9), None)))
         );
     }
 
@@ -615,7 +644,7 @@ mod tests {
         let inst = decode(&data);
         assert_eq!(
             inst,
-            Ok(Instruction::Sxt(Sxt::new(Source::Indexed((9, 4)))))
+            Ok(Instruction::Sxt(Sxt::new(Source::Indexed((9, 4)), None)))
         );
     }
 
@@ -625,7 +654,7 @@ mod tests {
         let inst = decode(&data);
         assert_eq!(
             inst,
-            Ok(Instruction::Sxt(Sxt::new(Source::Indexed((9, -4)))))
+            Ok(Instruction::Sxt(Sxt::new(Source::Indexed((9, -4)), None)))
         );
     }
 
@@ -635,7 +664,10 @@ mod tests {
         let inst = decode(&data);
         assert_eq!(
             inst,
-            Ok(Instruction::Sxt(Sxt::new(Source::RegisterIndirect(9))))
+            Ok(Instruction::Sxt(Sxt::new(
+                Source::RegisterIndirect(9),
+                None
+            )))
         );
     }
 
@@ -646,7 +678,8 @@ mod tests {
         assert_eq!(
             inst,
             Ok(Instruction::Sxt(Sxt::new(
-                Source::RegisterIndirectAutoIncrement(9)
+                Source::RegisterIndirectAutoIncrement(9),
+                None
             )))
         );
     }
@@ -659,7 +692,7 @@ mod tests {
             inst,
             Ok(Instruction::Push(Push::new(
                 Source::RegisterDirect(9),
-                OperandWidth::Word
+                Some(OperandWidth::Word)
             )))
         );
     }
@@ -672,7 +705,7 @@ mod tests {
             inst,
             Ok(Instruction::Push(Push::new(
                 Source::RegisterDirect(9),
-                OperandWidth::Byte
+                Some(OperandWidth::Byte)
             )))
         );
     }
@@ -685,7 +718,7 @@ mod tests {
             inst,
             Ok(Instruction::Push(Push::new(
                 Source::Indexed((9, 4)),
-                OperandWidth::Word
+                Some(OperandWidth::Word)
             )))
         );
     }
@@ -698,7 +731,7 @@ mod tests {
             inst,
             Ok(Instruction::Push(Push::new(
                 Source::Indexed((9, -4)),
-                OperandWidth::Word
+                Some(OperandWidth::Word)
             )))
         );
     }
@@ -711,7 +744,7 @@ mod tests {
             inst,
             Ok(Instruction::Push(Push::new(
                 Source::Indexed((9, 4)),
-                OperandWidth::Byte
+                Some(OperandWidth::Byte)
             )))
         );
     }
@@ -724,7 +757,7 @@ mod tests {
             inst,
             Ok(Instruction::Push(Push::new(
                 Source::Indexed((9, -4)),
-                OperandWidth::Byte
+                Some(OperandWidth::Byte)
             ))),
         );
     }
@@ -737,7 +770,7 @@ mod tests {
             inst,
             Ok(Instruction::Push(Push::new(
                 Source::RegisterIndirect(9),
-                OperandWidth::Word
+                Some(OperandWidth::Word)
             )))
         );
     }
@@ -750,7 +783,7 @@ mod tests {
             inst,
             Ok(Instruction::Push(Push::new(
                 Source::RegisterIndirect(9),
-                OperandWidth::Byte
+                Some(OperandWidth::Byte)
             )))
         );
     }
@@ -763,7 +796,7 @@ mod tests {
             inst,
             Ok(Instruction::Push(Push::new(
                 Source::RegisterIndirectAutoIncrement(9),
-                OperandWidth::Word
+                Some(OperandWidth::Word)
             )))
         );
     }
@@ -776,7 +809,7 @@ mod tests {
             inst,
             Ok(Instruction::Push(Push::new(
                 Source::RegisterIndirectAutoIncrement(9),
-                OperandWidth::Byte
+                Some(OperandWidth::Byte)
             )))
         );
     }
@@ -789,7 +822,7 @@ mod tests {
             inst,
             Ok(Instruction::Push(Push::new(
                 Source::Absolute(0x4400),
-                OperandWidth::Word
+                Some(OperandWidth::Word)
             )))
         );
     }
@@ -802,7 +835,7 @@ mod tests {
             inst,
             Ok(Instruction::Push(Push::new(
                 Source::Constant(4),
-                OperandWidth::Word
+                Some(OperandWidth::Word)
             )))
         );
     }
@@ -815,7 +848,7 @@ mod tests {
             inst,
             Ok(Instruction::Push(Push::new(
                 Source::Constant(8),
-                OperandWidth::Word
+                Some(OperandWidth::Word)
             )))
         );
     }
@@ -828,7 +861,7 @@ mod tests {
             inst,
             Ok(Instruction::Push(Push::new(
                 Source::Constant(0),
-                OperandWidth::Word
+                Some(OperandWidth::Word)
             )))
         );
     }
@@ -841,7 +874,7 @@ mod tests {
             inst,
             Ok(Instruction::Push(Push::new(
                 Source::Constant(1),
-                OperandWidth::Word
+                Some(OperandWidth::Word)
             )))
         );
     }
@@ -854,7 +887,7 @@ mod tests {
             inst,
             Ok(Instruction::Push(Push::new(
                 Source::Constant(2),
-                OperandWidth::Word
+                Some(OperandWidth::Word)
             )))
         );
     }
@@ -867,7 +900,7 @@ mod tests {
             inst,
             Ok(Instruction::Push(Push::new(
                 Source::Constant(-1),
-                OperandWidth::Word
+                Some(OperandWidth::Word)
             )))
         );
     }
@@ -878,7 +911,10 @@ mod tests {
         let inst = decode(&data);
         assert_eq!(
             inst,
-            Ok(Instruction::Call(Call::new(Source::RegisterDirect(9))))
+            Ok(Instruction::Call(Call::new(
+                Source::RegisterDirect(9),
+                None
+            )))
         );
     }
 
@@ -888,7 +924,7 @@ mod tests {
         let inst = decode(&data);
         assert_eq!(
             inst,
-            Ok(Instruction::Call(Call::new(Source::Indexed((9, 4)))))
+            Ok(Instruction::Call(Call::new(Source::Indexed((9, 4)), None)))
         );
     }
 
@@ -898,7 +934,7 @@ mod tests {
         let inst = decode(&data);
         assert_eq!(
             inst,
-            Ok(Instruction::Call(Call::new(Source::Indexed((9, -4)))))
+            Ok(Instruction::Call(Call::new(Source::Indexed((9, -4)), None)))
         );
     }
 
@@ -908,7 +944,10 @@ mod tests {
         let inst = decode(&data);
         assert_eq!(
             inst,
-            Ok(Instruction::Call(Call::new(Source::RegisterIndirect(9))))
+            Ok(Instruction::Call(Call::new(
+                Source::RegisterIndirect(9),
+                None
+            )))
         );
     }
 
@@ -919,7 +958,8 @@ mod tests {
         assert_eq!(
             inst,
             Ok(Instruction::Call(Call::new(
-                Source::RegisterIndirectAutoIncrement(9)
+                Source::RegisterIndirectAutoIncrement(9),
+                None
             )))
         );
     }
@@ -928,14 +968,20 @@ mod tests {
     fn call_pc_symbolic() {
         let data = [0x90, 0x12, 0x2, 0x0];
         let inst = decode(&data);
-        assert_eq!(inst, Ok(Instruction::Call(Call::new(Source::Symbolic(2)))));
+        assert_eq!(
+            inst,
+            Ok(Instruction::Call(Call::new(Source::Symbolic(2), None)))
+        );
     }
 
     #[test]
     fn call_pc_immediate() {
         let data = [0xb0, 0x12, 0x2, 0x0];
         let inst = decode(&data);
-        assert_eq!(inst, Ok(Instruction::Call(Call::new(Source::Immediate(2)))));
+        assert_eq!(
+            inst,
+            Ok(Instruction::Call(Call::new(Source::Immediate(2), None)))
+        );
     }
 
     #[test]

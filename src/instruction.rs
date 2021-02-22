@@ -1,11 +1,9 @@
-use std::fmt;
-
+use crate::emulate::*;
 use crate::jxx::*;
 use crate::single_operand::*;
 use crate::two_operand::*;
 
-pub const BYTE_SUFFIX: &str = ".b";
-pub const WORD_SUFFIX: &str = "";
+use std::fmt;
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Instruction {
@@ -41,6 +39,32 @@ pub enum Instruction {
     Bis(Bis),
     Xor(Xor),
     And(And),
+
+    // emulated
+    Adc(Adc),
+    Br(Br),
+    Clr(Clr),
+    Clrc(Clrc),
+    Clrn(Clrn),
+    Clrz(Clrz),
+    Dadc(Dadc),
+    Dec(Dec),
+    Decd(Decd),
+    Dint(Dint),
+    Eint(Eint),
+    Inc(Inc),
+    Incd(Incd),
+    Inv(Inv),
+    Nop(Nop),
+    Pop(Pop),
+    Ret(Ret),
+    Rla(Rla),
+    Rlc(Rlc),
+    Sbc(Sbc),
+    Setc(Setc),
+    Setn(Setn),
+    Setz(Setz),
+    Tst(Tst),
 }
 
 impl Instruction {
@@ -73,6 +97,30 @@ impl Instruction {
             Instruction::Bis(inst) => inst.len(),
             Instruction::Xor(inst) => inst.len(),
             Instruction::And(inst) => inst.len(),
+            Instruction::Adc(inst) => inst.len(),
+            Instruction::Br(inst) => inst.len(),
+            Instruction::Clr(inst) => inst.len(),
+            Instruction::Clrc(inst) => inst.len(),
+            Instruction::Clrn(inst) => inst.len(),
+            Instruction::Clrz(inst) => inst.len(),
+            Instruction::Dadc(inst) => inst.len(),
+            Instruction::Dec(inst) => inst.len(),
+            Instruction::Decd(inst) => inst.len(),
+            Instruction::Dint(inst) => inst.len(),
+            Instruction::Eint(inst) => inst.len(),
+            Instruction::Inc(inst) => inst.len(),
+            Instruction::Incd(inst) => inst.len(),
+            Instruction::Inv(inst) => inst.len(),
+            Instruction::Nop(inst) => inst.len(),
+            Instruction::Pop(inst) => inst.len(),
+            Instruction::Ret(inst) => inst.len(),
+            Instruction::Rla(inst) => inst.len(),
+            Instruction::Rlc(inst) => inst.len(),
+            Instruction::Sbc(inst) => inst.len(),
+            Instruction::Setc(inst) => inst.len(),
+            Instruction::Setn(inst) => inst.len(),
+            Instruction::Setz(inst) => inst.len(),
+            Instruction::Tst(inst) => inst.len(),
         }
     }
 }
@@ -107,6 +155,30 @@ impl fmt::Display for Instruction {
             Instruction::Bis(inst) => write!(f, "{}", inst),
             Instruction::Xor(inst) => write!(f, "{}", inst),
             Instruction::And(inst) => write!(f, "{}", inst),
+            Instruction::Adc(inst) => write!(f, "{}", inst),
+            Instruction::Br(inst) => write!(f, "{}", inst),
+            Instruction::Clr(inst) => write!(f, "{}", inst),
+            Instruction::Clrc(inst) => write!(f, "{}", inst),
+            Instruction::Clrn(inst) => write!(f, "{}", inst),
+            Instruction::Clrz(inst) => write!(f, "{}", inst),
+            Instruction::Dadc(inst) => write!(f, "{}", inst),
+            Instruction::Dec(inst) => write!(f, "{}", inst),
+            Instruction::Decd(inst) => write!(f, "{}", inst),
+            Instruction::Dint(inst) => write!(f, "{}", inst),
+            Instruction::Eint(inst) => write!(f, "{}", inst),
+            Instruction::Inc(inst) => write!(f, "{}", inst),
+            Instruction::Incd(inst) => write!(f, "{}", inst),
+            Instruction::Inv(inst) => write!(f, "{}", inst),
+            Instruction::Nop(inst) => write!(f, "{}", inst),
+            Instruction::Pop(inst) => write!(f, "{}", inst),
+            Instruction::Ret(inst) => write!(f, "{}", inst),
+            Instruction::Rla(inst) => write!(f, "{}", inst),
+            Instruction::Rlc(inst) => write!(f, "{}", inst),
+            Instruction::Sbc(inst) => write!(f, "{}", inst),
+            Instruction::Setc(inst) => write!(f, "{}", inst),
+            Instruction::Setn(inst) => write!(f, "{}", inst),
+            Instruction::Setz(inst) => write!(f, "{}", inst),
+            Instruction::Tst(inst) => write!(f, "{}", inst),
         }
     }
 }

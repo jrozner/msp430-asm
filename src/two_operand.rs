@@ -3,12 +3,12 @@ use std::fmt;
 use crate::emulate;
 use crate::emulate::Emulate;
 use crate::instruction::Instruction;
-use crate::operand::{Destination, OperandWidth, Source};
+use crate::operand::{Operand, OperandWidth};
 
 pub trait TwoOperand {
     fn mnemonic(&self) -> &str;
-    fn source(&self) -> &Source;
-    fn destination(&self) -> &Destination;
+    fn source(&self) -> &Operand;
+    fn destination(&self) -> &Operand;
     fn len(&self) -> usize;
     fn operand_width(&self) -> &OperandWidth;
 }
@@ -17,17 +17,13 @@ macro_rules! two_operand {
     ($t:ident, $n:expr) => {
         #[derive(Debug, Clone, PartialEq)]
         pub struct $t {
-            source: Source,
+            source: Operand,
             operand_width: OperandWidth,
-            destination: Destination,
+            destination: Operand,
         }
 
         impl $t {
-            pub fn new(
-                source: Source,
-                operand_width: OperandWidth,
-                destination: Destination,
-            ) -> $t {
+            pub fn new(source: Operand, operand_width: OperandWidth, destination: Operand) -> $t {
                 $t {
                     source: source,
                     operand_width: operand_width,
@@ -44,11 +40,11 @@ macro_rules! two_operand {
                 }
             }
 
-            fn source(&self) -> &Source {
+            fn source(&self) -> &Operand {
                 &self.source
             }
 
-            fn destination(&self) -> &Destination {
+            fn destination(&self) -> &Operand {
                 &self.destination
             }
 
@@ -79,13 +75,12 @@ two_operand!(Mov, "mov");
 
 impl Emulate for Mov {
     fn emulate(&self) -> Option<Instruction> {
-        if self.source == Source::Constant(0) && self.destination == Destination::RegisterDirect(3)
-        {
+        if self.source == Operand::Constant(0) && self.destination == Operand::RegisterDirect(3) {
             return Some(Instruction::Nop(emulate::Nop::new(None, None)));
         }
 
-        if self.source == Source::RegisterIndirectAutoIncrement(1) {
-            if self.destination == Destination::RegisterDirect(0) {
+        if self.source == Operand::RegisterIndirectAutoIncrement(1) {
+            if self.destination == Operand::RegisterDirect(0) {
                 return Some(Instruction::Ret(emulate::Ret::new(None, None)));
             } else {
                 return Some(Instruction::Pop(emulate::Pop::new(
@@ -96,7 +91,7 @@ impl Emulate for Mov {
         }
 
         // TODO: We need to pass self.source here
-        if self.destination == Destination::RegisterDirect(0) {
+        if self.destination == Operand::RegisterDirect(0) {
             return Some(Instruction::Br(emulate::Br::new(Some(self.source), None)));
         }
 
@@ -108,12 +103,12 @@ two_operand!(Add, "add");
 
 impl Emulate for Add {
     fn emulate(&self) -> Option<Instruction> {
-        if self.source == Source::Constant(1) {
+        if self.source == Operand::Constant(1) {
             Some(Instruction::Inc(emulate::Inc::new(
                 Some(self.destination),
                 None,
             )))
-        } else if self.source == Source::Constant(2) {
+        } else if self.source == Operand::Constant(2) {
             Some(Instruction::Incd(emulate::Incd::new(
                 Some(self.destination),
                 None,
@@ -133,7 +128,7 @@ two_operand!(Addc, "addc");
 
 impl Emulate for Addc {
     fn emulate(&self) -> Option<Instruction> {
-        if self.source == Source::Constant(0) {
+        if self.source == Operand::Constant(0) {
             Some(Instruction::Adc(emulate::Adc::new(
                 Some(self.destination),
                 Some(self.operand_width),
@@ -153,7 +148,7 @@ two_operand!(Subc, "subc");
 
 impl Emulate for Subc {
     fn emulate(&self) -> Option<Instruction> {
-        if self.source == Source::Constant(0) {
+        if self.source == Operand::Constant(0) {
             Some(Instruction::Sbc(emulate::Sbc::new(
                 Some(self.destination),
                 Some(self.operand_width),
@@ -168,12 +163,12 @@ two_operand!(Sub, "sub");
 
 impl Emulate for Sub {
     fn emulate(&self) -> Option<Instruction> {
-        if self.source == Source::Constant(1) {
+        if self.source == Operand::Constant(1) {
             Some(Instruction::Dec(emulate::Dec::new(
                 Some(self.destination),
                 Some(self.operand_width),
             )))
-        } else if self.source == Source::Constant(2) {
+        } else if self.source == Operand::Constant(2) {
             Some(Instruction::Decd(emulate::Decd::new(
                 Some(self.destination),
                 Some(self.operand_width),
@@ -188,7 +183,7 @@ two_operand!(Cmp, "cmp");
 
 impl Emulate for Cmp {
     fn emulate(&self) -> Option<Instruction> {
-        if self.source == Source::Constant(0) {
+        if self.source == Operand::Constant(0) {
             Some(Instruction::Tst(emulate::Tst::new(
                 Some(self.destination),
                 Some(self.operand_width),
@@ -203,7 +198,7 @@ two_operand!(Dadd, "dadd");
 
 impl Emulate for Dadd {
     fn emulate(&self) -> Option<Instruction> {
-        if self.source == Source::Constant(0) {
+        if self.source == Operand::Constant(0) {
             Some(Instruction::Dadc(emulate::Dadc::new(
                 Some(self.destination),
                 Some(self.operand_width),
@@ -219,18 +214,18 @@ two_operand!(Bic, "bic");
 
 impl Emulate for Bic {
     fn emulate(&self) -> Option<Instruction> {
-        if self.destination == Destination::RegisterDirect(2) {
+        if self.destination == Operand::RegisterDirect(2) {
             match self.source {
-                Source::Constant(1) => {
+                Operand::Constant(1) => {
                     return Some(Instruction::Clrc(emulate::Clrc::new(None, None)))
                 }
-                Source::Constant(2) => {
+                Operand::Constant(2) => {
                     return Some(Instruction::Clrn(emulate::Clrn::new(None, None)))
                 }
-                Source::Constant(4) => {
+                Operand::Constant(4) => {
                     return Some(Instruction::Clrz(emulate::Clrz::new(None, None)))
                 }
-                Source::Constant(8) => {
+                Operand::Constant(8) => {
                     return Some(Instruction::Dint(emulate::Dint::new(None, None)))
                 }
                 _ => {}
@@ -245,18 +240,18 @@ two_operand!(Bis, "bis");
 
 impl Emulate for Bis {
     fn emulate(&self) -> Option<Instruction> {
-        if self.destination == Destination::RegisterDirect(2) {
+        if self.destination == Operand::RegisterDirect(2) {
             match self.source {
-                Source::Constant(1) => {
+                Operand::Constant(1) => {
                     return Some(Instruction::Setc(emulate::Setc::new(None, None)))
                 }
-                Source::Constant(2) => {
+                Operand::Constant(2) => {
                     return Some(Instruction::Setz(emulate::Setz::new(None, None)))
                 }
-                Source::Constant(4) => {
+                Operand::Constant(4) => {
                     return Some(Instruction::Setn(emulate::Setn::new(None, None)))
                 }
-                Source::Constant(8) => {
+                Operand::Constant(8) => {
                     return Some(Instruction::Eint(emulate::Eint::new(None, None)))
                 }
                 _ => {}
@@ -271,7 +266,7 @@ two_operand!(Xor, "xor");
 
 impl Emulate for Xor {
     fn emulate(&self) -> Option<Instruction> {
-        if self.source == Source::Constant(-1) {
+        if self.source == Operand::Constant(-1) {
             Some(Instruction::Inv(emulate::Inv::new(
                 Some(self.destination),
                 Some(self.operand_width),

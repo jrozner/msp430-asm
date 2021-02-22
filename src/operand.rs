@@ -6,7 +6,7 @@ use crate::DecodeError;
 use crate::Result;
 
 #[derive(Debug, Clone, Copy, PartialEq)]
-pub enum Source {
+pub enum Operand {
     RegisterDirect(u8),
     Indexed((u8, i16)),
     RegisterIndirect(u8),
@@ -17,148 +17,32 @@ pub enum Source {
     Constant(i8),
 }
 
-impl Source {
+impl Operand {
     pub fn len(&self) -> usize {
         match self {
-            Source::RegisterDirect(_) => 0,
-            Source::Indexed(_) => 2,
-            Source::RegisterIndirect(_) => 0,
-            Source::RegisterIndirectAutoIncrement(_) => 0,
-            Source::Symbolic(_) => 2,
-            Source::Immediate(_) => 2,
-            Source::Absolute(_) => 2,
-            Source::Constant(_) => 0,
+            Operand::RegisterDirect(_) => 0,
+            Operand::Indexed(_) => 2,
+            Operand::RegisterIndirect(_) => 0,
+            Operand::RegisterIndirectAutoIncrement(_) => 0,
+            Operand::Symbolic(_) => 2,
+            Operand::Immediate(_) => 2,
+            Operand::Absolute(_) => 2,
+            Operand::Constant(_) => 0,
         }
     }
 }
 
-impl fmt::Display for Source {
+impl fmt::Display for Operand {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Source::RegisterDirect(r) => {
-                if *r == 1 {
-                    write!(f, "sp")
-                } else {
-                    write!(f, "r{}", r)
-                }
-            }
-            Source::Indexed((r, i)) => {
-                if *r == 1 {
-                    if *i >= 0 {
-                        write!(f, "{:#x}(sp)", i)
-                    } else {
-                        write!(f, "-{:#x}(sp)", i * -1)
-                    }
-                } else {
-                    if *i >= 0 {
-                        write!(f, "{:#x}(r{})", i, r)
-                    } else {
-                        write!(f, "-{:#x}(r{})", i * -1, r)
-                    }
-                }
-            }
-            Source::RegisterIndirect(r) => {
-                if *r == 1 {
-                    write!(f, "@sp")
-                } else {
-                    write!(f, "@r{}", r)
-                }
-            }
-            Source::RegisterIndirectAutoIncrement(r) => {
-                if *r == 1 {
-                    write!(f, "@sp+")
-                } else {
-                    write!(f, "@r{}+", r)
-                }
-            }
-            // TODO: is this correct? can you know what this is without knowing what PC is?
-            Source::Symbolic(i) => {
-                if *i >= 0 {
-                    write!(f, "#{:#x}(pc)", i)
-                } else {
-                    write!(f, "#-{:#x}(pc)", i * -1)
-                }
-            }
-            Source::Immediate(i) => {
-                if *i >= 0 {
-                    write!(f, "#{:#x}", i)
-                } else {
-                    write!(f, "#-{:#x}", i * -1)
-                }
-            }
-            Source::Absolute(a) => write!(f, "&{:#x}", a),
-            Source::Constant(i) => {
-                if *i >= 0 {
-                    write!(f, "#{:#x}", i)
-                } else {
-                    write!(f, "#-{:#x}", i * -1)
-                }
-            }
-        }
-    }
-}
-
-impl std::cmp::PartialEq<Destination> for Source {
-    fn eq(&self, other: &Destination) -> bool {
-        if let Destination::RegisterDirect(dest_r) = other {
-            if let Source::RegisterDirect(src_r) = self {
-                return dest_r == src_r;
-            } else {
-                return false;
-            }
-        } else if let Destination::Indexed((dest_r, dest_i)) = other {
-            if let Source::Indexed((src_r, src_i)) = self {
-                return dest_r == src_r && dest_i == src_i;
-            } else {
-                false
-            }
-        } else if let Destination::Symbolic(dest_i) = other {
-            if let Source::Symbolic(src_i) = self {
-                return dest_i == src_i;
-            } else {
-                false
-            }
-        } else if let Destination::Absolute(dest_a) = other {
-            if let Source::Absolute(src_a) = self {
-                return src_a == dest_a;
-            } else {
-                false
-            }
-        } else {
-            // this should be unreachable
-            false
-        }
-    }
-}
-
-#[derive(Debug, Clone, Copy, PartialEq)]
-pub enum Destination {
-    RegisterDirect(u8),
-    Indexed((u8, i16)),
-    Symbolic(i16),
-    Absolute(u16),
-}
-
-impl Destination {
-    pub fn len(&self) -> usize {
-        match self {
-            Destination::RegisterDirect(_) => 0,
-            Destination::Indexed(_) | Destination::Symbolic(_) | Destination::Absolute(_) => 2,
-        }
-    }
-}
-
-impl fmt::Display for Destination {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            Destination::RegisterDirect(r) => match r {
+            Operand::RegisterDirect(r) => match r {
                 0 => write!(f, "pc"),
                 1 => write!(f, "sp"),
                 2 => write!(f, "sr"),
                 3 => write!(f, "cg"),
                 _ => write!(f, "r{}", r),
             },
-            Destination::Indexed((r, i)) => match r {
+            Operand::Indexed((r, i)) => match r {
                 1 => {
                     if *i >= 0 {
                         write!(f, "{:#x}(sp)", i)
@@ -182,14 +66,43 @@ impl fmt::Display for Destination {
                 }
                 _ => unreachable!(),
             },
-            Destination::Symbolic(i) => {
+            Operand::RegisterIndirect(r) => {
+                if *r == 1 {
+                    write!(f, "@sp")
+                } else {
+                    write!(f, "@r{}", r)
+                }
+            }
+            Operand::RegisterIndirectAutoIncrement(r) => {
+                if *r == 1 {
+                    write!(f, "@sp+")
+                } else {
+                    write!(f, "@r{}+", r)
+                }
+            }
+            // TODO: is this correct? can you know what this is without knowing what PC is?
+            Operand::Symbolic(i) => {
                 if *i >= 0 {
                     write!(f, "#{:#x}(pc)", i)
                 } else {
                     write!(f, "#-{:#x}(pc)", i * -1)
                 }
             }
-            Destination::Absolute(a) => write!(f, "&{:#x}", a),
+            Operand::Immediate(i) => {
+                if *i >= 0 {
+                    write!(f, "#{:#x}", i)
+                } else {
+                    write!(f, "#-{:#x}", i * -1)
+                }
+            }
+            Operand::Absolute(a) => write!(f, "&{:#x}", a),
+            Operand::Constant(i) => {
+                if *i >= 0 {
+                    write!(f, "#{:#x}", i)
+                } else {
+                    write!(f, "#-{:#x}", i * -1)
+                }
+            }
         }
     }
 }
@@ -210,7 +123,7 @@ impl From<u8> for OperandWidth {
     }
 }
 
-pub fn parse_source(register: u8, source: u16, data: &[u8]) -> Result<(Source, &[u8])> {
+pub fn parse_source(register: u8, source: u16, data: &[u8]) -> Result<(Operand, &[u8])> {
     match register {
         0 => match source {
             1 => {
@@ -220,7 +133,7 @@ pub fn parse_source(register: u8, source: u16, data: &[u8]) -> Result<(Source, &
                     let (bytes, remaining_data) = data.split_at(std::mem::size_of::<u16>());
                     let second_word =
                         ones_complement(u16::from_le_bytes(bytes.try_into().unwrap()));
-                    Ok((Source::Symbolic(second_word), remaining_data))
+                    Ok((Operand::Symbolic(second_word), remaining_data))
                 }
             }
             3 => {
@@ -230,7 +143,7 @@ pub fn parse_source(register: u8, source: u16, data: &[u8]) -> Result<(Source, &
                     let (bytes, remaining_data) = data.split_at(std::mem::size_of::<u16>());
                     let second_word =
                         ones_complement(u16::from_le_bytes(bytes.try_into().unwrap()));
-                    Ok((Source::Immediate(second_word), remaining_data))
+                    Ok((Operand::Immediate(second_word), remaining_data))
                 }
             }
             _ => Err(DecodeError::InvalidSource((source, register))),
@@ -242,22 +155,22 @@ pub fn parse_source(register: u8, source: u16, data: &[u8]) -> Result<(Source, &
                 } else {
                     let (bytes, remaining_data) = data.split_at(std::mem::size_of::<u16>());
                     let second_word = u16::from_le_bytes(bytes.try_into().unwrap());
-                    Ok((Source::Absolute(second_word), remaining_data))
+                    Ok((Operand::Absolute(second_word), remaining_data))
                 }
             }
-            2 => Ok((Source::Constant(4), data)),
-            3 => Ok((Source::Constant(8), data)),
+            2 => Ok((Operand::Constant(4), data)),
+            3 => Ok((Operand::Constant(8), data)),
             _ => Err(DecodeError::InvalidSource((source, register))),
         },
         3 => match source {
-            0 => Ok((Source::Constant(0), data)),
-            1 => Ok((Source::Constant(1), data)),
-            2 => Ok((Source::Constant(2), data)),
-            3 => Ok((Source::Constant(-1), data)),
+            0 => Ok((Operand::Constant(0), data)),
+            1 => Ok((Operand::Constant(1), data)),
+            2 => Ok((Operand::Constant(2), data)),
+            3 => Ok((Operand::Constant(-1), data)),
             _ => Err(DecodeError::InvalidSource((source, register))),
         },
         _ => match source {
-            0 => Ok((Source::RegisterDirect(register), data)),
+            0 => Ok((Operand::RegisterDirect(register), data)),
             1 => {
                 if data.len() < 2 {
                     Err(DecodeError::MissingSource)
@@ -265,19 +178,19 @@ pub fn parse_source(register: u8, source: u16, data: &[u8]) -> Result<(Source, &
                     let (bytes, remaining_data) = data.split_at(std::mem::size_of::<u16>());
                     let second_word =
                         ones_complement(u16::from_le_bytes(bytes.try_into().unwrap()));
-                    Ok((Source::Indexed((register, second_word)), remaining_data))
+                    Ok((Operand::Indexed((register, second_word)), remaining_data))
                 }
             }
-            2 => Ok((Source::RegisterIndirect(register), data)),
-            3 => Ok((Source::RegisterIndirectAutoIncrement(register), data)),
+            2 => Ok((Operand::RegisterIndirect(register), data)),
+            3 => Ok((Operand::RegisterIndirectAutoIncrement(register), data)),
             _ => Err(DecodeError::InvalidSource((source, register))),
         },
     }
 }
 
-pub fn parse_destination(register: u8, source: u16, data: &[u8]) -> Result<Destination> {
+pub fn parse_destination(register: u8, source: u16, data: &[u8]) -> Result<Operand> {
     match source {
-        0 => Ok(Destination::RegisterDirect(register)),
+        0 => Ok(Operand::RegisterDirect(register)),
         1 => {
             if data.len() < 2 {
                 Err(DecodeError::MissingDestination)
@@ -286,9 +199,9 @@ pub fn parse_destination(register: u8, source: u16, data: &[u8]) -> Result<Desti
                 let raw_operand = u16::from_le_bytes(bytes.try_into().unwrap());
                 let index = ones_complement(raw_operand);
                 match register {
-                    0 => Ok(Destination::Symbolic(index)),
-                    2 => Ok(Destination::Absolute(raw_operand)),
-                    1 | 3..=15 => Ok(Destination::Indexed((register, index))),
+                    0 => Ok(Operand::Symbolic(index)),
+                    2 => Ok(Operand::Absolute(raw_operand)),
+                    1 | 3..=15 => Ok(Operand::Indexed((register, index))),
                     _ => Err(DecodeError::InvalidDestination),
                 }
             }
@@ -305,7 +218,7 @@ mod tests {
     fn source_pc_symbolic() {
         let data = [0x2, 0x0];
         let source = parse_source(0, 1, &data);
-        assert_eq!(source, Ok((Source::Symbolic(2), &data[2..])));
+        assert_eq!(source, Ok((Operand::Symbolic(2), &data[2..])));
     }
 
     #[test]
@@ -319,14 +232,14 @@ mod tests {
     fn source_pc_immediate() {
         let data = [0x2, 0x0];
         let source = parse_source(0, 3, &data);
-        assert_eq!(source, Ok((Source::Immediate(2), &data[2..])));
+        assert_eq!(source, Ok((Operand::Immediate(2), &data[2..])));
     }
 
     #[test]
     fn source_pc_immediate_negative() {
         let data = [0xfe, 0xff];
         let source = parse_source(0, 3, &data);
-        assert_eq!(source, Ok((Source::Immediate(-1), &data[2..])));
+        assert_eq!(source, Ok((Operand::Immediate(-1), &data[2..])));
     }
 
     #[test]
@@ -347,7 +260,7 @@ mod tests {
     fn source_sr_absolute() {
         let data = [0x2, 0x0];
         let source = parse_source(2, 1, &data);
-        assert_eq!(source, Ok((Source::Absolute(2), &data[2..])));
+        assert_eq!(source, Ok((Operand::Absolute(2), &data[2..])));
     }
 
     #[test]
@@ -361,14 +274,14 @@ mod tests {
     fn source_sr_constant_four() {
         let data = [];
         let source = parse_source(2, 2, &data);
-        assert_eq!(source, Ok((Source::Constant(4), &data[..])));
+        assert_eq!(source, Ok((Operand::Constant(4), &data[..])));
     }
 
     #[test]
     fn source_sr_constant_eight() {
         let data = [];
         let source = parse_source(2, 3, &data);
-        assert_eq!(source, Ok((Source::Constant(8), &data[..])));
+        assert_eq!(source, Ok((Operand::Constant(8), &data[..])));
     }
 
     #[test]
@@ -382,28 +295,28 @@ mod tests {
     fn source_cg_zero() {
         let data = [];
         let source = parse_source(3, 0, &data);
-        assert_eq!(source, Ok((Source::Constant(0), &data[..])));
+        assert_eq!(source, Ok((Operand::Constant(0), &data[..])));
     }
 
     #[test]
     fn source_cg_one() {
         let data = [];
         let source = parse_source(3, 1, &data);
-        assert_eq!(source, Ok((Source::Constant(1), &data[..])));
+        assert_eq!(source, Ok((Operand::Constant(1), &data[..])));
     }
 
     #[test]
     fn source_cg_two() {
         let data = [];
         let source = parse_source(3, 2, &data);
-        assert_eq!(source, Ok((Source::Constant(2), &data[..])));
+        assert_eq!(source, Ok((Operand::Constant(2), &data[..])));
     }
 
     #[test]
     fn source_cg_negative_one() {
         let data = [];
         let source = parse_source(3, 3, &data);
-        assert_eq!(source, Ok((Source::Constant(-1), &data[..])));
+        assert_eq!(source, Ok((Operand::Constant(-1), &data[..])));
     }
 
     #[test]
@@ -417,28 +330,28 @@ mod tests {
     fn source_gp_register_direct() {
         let data = [];
         let source = parse_source(9, 0, &data);
-        assert_eq!(source, Ok((Source::RegisterDirect(9), &data[..])));
+        assert_eq!(source, Ok((Operand::RegisterDirect(9), &data[..])));
     }
 
     #[test]
     fn source_gp_register_indexed() {
         let data = [0x2, 0x0];
         let source = parse_source(9, 1, &data);
-        assert_eq!(source, Ok((Source::Indexed((9, 2)), &data[2..])));
+        assert_eq!(source, Ok((Operand::Indexed((9, 2)), &data[2..])));
     }
 
     #[test]
     fn source_gp_register_indexed_negative() {
         let data = [0xfd, 0xff];
         let source = parse_source(9, 1, &data);
-        assert_eq!(source, Ok((Source::Indexed((9, -2)), &data[2..])));
+        assert_eq!(source, Ok((Operand::Indexed((9, -2)), &data[2..])));
     }
 
     #[test]
     fn source_gp_register_indirect() {
         let data = [];
         let source = parse_source(9, 2, &data);
-        assert_eq!(source, Ok((Source::RegisterIndirect(9), &data[..])));
+        assert_eq!(source, Ok((Operand::RegisterIndirect(9), &data[..])));
     }
 
     #[test]
@@ -447,7 +360,7 @@ mod tests {
         let source = parse_source(9, 3, &data);
         assert_eq!(
             source,
-            Ok((Source::RegisterIndirectAutoIncrement(9), &data[..]))
+            Ok((Operand::RegisterIndirectAutoIncrement(9), &data[..]))
         );
     }
 
@@ -462,42 +375,42 @@ mod tests {
     fn destination_register_direct() {
         let data = [];
         let destination = parse_destination(9, 0, &data);
-        assert_eq!(destination, Ok(Destination::RegisterDirect(9)));
+        assert_eq!(destination, Ok(Operand::RegisterDirect(9)));
     }
 
     #[test]
     fn destination_register_indexed() {
         let data = [0x2, 0x0];
         let destination = parse_destination(9, 1, &data);
-        assert_eq!(destination, Ok(Destination::Indexed((9, 2))));
+        assert_eq!(destination, Ok(Operand::Indexed((9, 2))));
     }
 
     #[test]
     fn destination_register_indexed_negative() {
         let data = [0xfe, 0xff];
         let destination = parse_destination(9, 1, &data);
-        assert_eq!(destination, Ok(Destination::Indexed((9, -1))));
+        assert_eq!(destination, Ok(Operand::Indexed((9, -1))));
     }
 
     #[test]
     fn destination_register_symbolic() {
         let data = [0x2, 0x0];
         let destination = parse_destination(0, 1, &data);
-        assert_eq!(destination, Ok(Destination::Symbolic(2)));
+        assert_eq!(destination, Ok(Operand::Symbolic(2)));
     }
 
     #[test]
     fn destination_register_symbolic_negative() {
         let data = [0xfe, 0xff];
         let destination = parse_destination(0, 1, &data);
-        assert_eq!(destination, Ok(Destination::Symbolic(-1)));
+        assert_eq!(destination, Ok(Operand::Symbolic(-1)));
     }
 
     #[test]
     fn destination_register_absolute() {
         let data = [0x2, 0x0];
         let destination = parse_destination(2, 1, &data);
-        assert_eq!(destination, Ok(Destination::Absolute(2)));
+        assert_eq!(destination, Ok(Operand::Absolute(2)));
     }
 
     #[test]

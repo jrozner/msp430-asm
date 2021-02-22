@@ -1,10 +1,10 @@
-use crate::operand::{OperandWidth, Source};
+use crate::operand::{Operand, OperandWidth};
 
 use std::fmt;
 
 pub trait SingleOperand {
     fn mnemonic(&self) -> &str;
-    fn source(&self) -> &Source;
+    fn source(&self) -> &Operand;
     fn len(&self) -> usize;
     fn operand_width(&self) -> &Option<OperandWidth>;
 }
@@ -13,12 +13,12 @@ macro_rules! single_operand {
     ($t:ident, $n:expr) => {
         #[derive(Debug, Clone, PartialEq)]
         pub struct $t {
-            source: Source,
+            source: Operand,
             operand_width: Option<OperandWidth>,
         }
 
         impl $t {
-            pub fn new(source: Source, operand_width: Option<OperandWidth>) -> $t {
+            pub fn new(source: Operand, operand_width: Option<OperandWidth>) -> $t {
                 $t {
                     source: source,
                     operand_width: operand_width,
@@ -34,7 +34,7 @@ macro_rules! single_operand {
                 }
             }
 
-            fn source(&self) -> &Source {
+            fn source(&self) -> &Operand {
                 &self.source
             }
 

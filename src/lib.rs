@@ -238,7 +238,7 @@ fn ones_complement(val: u16) -> i16 {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::operand::Source;
+    use crate::operand::Operand;
 
     #[test]
     fn empty_data() {
@@ -316,7 +316,7 @@ mod tests {
         assert_eq!(
             inst,
             Ok(Instruction::Rrc(Rrc::new(
-                Source::RegisterDirect(9),
+                Operand::RegisterDirect(9),
                 Some(OperandWidth::Word)
             )))
         )
@@ -329,7 +329,7 @@ mod tests {
         assert_eq!(
             inst,
             Ok(Instruction::Rrc(Rrc::new(
-                Source::RegisterDirect(9),
+                Operand::RegisterDirect(9),
                 Some(OperandWidth::Byte)
             )))
         );
@@ -342,7 +342,7 @@ mod tests {
         assert_eq!(
             inst,
             Ok(Instruction::Rrc(Rrc::new(
-                Source::Indexed((9, 4)),
+                Operand::Indexed((9, 4)),
                 Some(OperandWidth::Word)
             )))
         );
@@ -355,7 +355,7 @@ mod tests {
         assert_eq!(
             inst,
             Ok(Instruction::Rrc(Rrc::new(
-                Source::Indexed((9, -4)),
+                Operand::Indexed((9, -4)),
                 Some(OperandWidth::Word)
             )))
         );
@@ -368,7 +368,7 @@ mod tests {
         assert_eq!(
             inst,
             Ok(Instruction::Rrc(Rrc::new(
-                Source::Indexed((9, 4)),
+                Operand::Indexed((9, 4)),
                 Some(OperandWidth::Byte)
             )))
         );
@@ -381,7 +381,7 @@ mod tests {
         assert_eq!(
             inst,
             Ok(Instruction::Rrc(Rrc::new(
-                Source::Indexed((9, -4)),
+                Operand::Indexed((9, -4)),
                 Some(OperandWidth::Byte)
             )))
         );
@@ -394,7 +394,7 @@ mod tests {
         assert_eq!(
             inst,
             Ok(Instruction::Rrc(Rrc::new(
-                Source::RegisterIndirect(9),
+                Operand::RegisterIndirect(9),
                 Some(OperandWidth::Word)
             )))
         );
@@ -407,7 +407,7 @@ mod tests {
         assert_eq!(
             inst,
             Ok(Instruction::Rrc(Rrc::new(
-                Source::RegisterIndirect(9),
+                Operand::RegisterIndirect(9),
                 Some(OperandWidth::Byte)
             )))
         );
@@ -420,7 +420,7 @@ mod tests {
         assert_eq!(
             inst,
             Ok(Instruction::Rrc(Rrc::new(
-                Source::RegisterIndirectAutoIncrement(9),
+                Operand::RegisterIndirectAutoIncrement(9),
                 Some(OperandWidth::Word)
             )))
         );
@@ -433,7 +433,7 @@ mod tests {
         assert_eq!(
             inst,
             Ok(Instruction::Rrc(Rrc::new(
-                Source::RegisterIndirectAutoIncrement(9),
+                Operand::RegisterIndirectAutoIncrement(9),
                 Some(OperandWidth::Byte)
             )))
         );
@@ -446,7 +446,7 @@ mod tests {
         assert_eq!(
             inst,
             Ok(Instruction::Swpb(Swpb::new(
-                Source::RegisterDirect(9),
+                Operand::RegisterDirect(9),
                 None
             )))
         );
@@ -458,7 +458,7 @@ mod tests {
         let inst = decode(&data);
         assert_eq!(
             inst,
-            Ok(Instruction::Swpb(Swpb::new(Source::Indexed((9, 4)), None)))
+            Ok(Instruction::Swpb(Swpb::new(Operand::Indexed((9, 4)), None)))
         );
     }
 
@@ -468,7 +468,10 @@ mod tests {
         let inst = decode(&data);
         assert_eq!(
             inst,
-            Ok(Instruction::Swpb(Swpb::new(Source::Indexed((9, -4)), None)))
+            Ok(Instruction::Swpb(Swpb::new(
+                Operand::Indexed((9, -4)),
+                None
+            )))
         );
     }
 
@@ -479,7 +482,7 @@ mod tests {
         assert_eq!(
             inst,
             Ok(Instruction::Swpb(Swpb::new(
-                Source::RegisterIndirect(9),
+                Operand::RegisterIndirect(9),
                 None
             )))
         );
@@ -492,7 +495,7 @@ mod tests {
         assert_eq!(
             inst,
             Ok(Instruction::Swpb(Swpb::new(
-                Source::RegisterIndirectAutoIncrement(9),
+                Operand::RegisterIndirectAutoIncrement(9),
                 None
             )))
         );
@@ -505,7 +508,7 @@ mod tests {
         assert_eq!(
             inst,
             Ok(Instruction::Rra(Rra::new(
-                Source::RegisterDirect(9),
+                Operand::RegisterDirect(9),
                 Some(OperandWidth::Word)
             )))
         );
@@ -518,7 +521,7 @@ mod tests {
         assert_eq!(
             inst,
             Ok(Instruction::Rra(Rra::new(
-                Source::RegisterDirect(9),
+                Operand::RegisterDirect(9),
                 Some(OperandWidth::Byte)
             )))
         );
@@ -531,7 +534,7 @@ mod tests {
         assert_eq!(
             inst,
             Ok(Instruction::Rra(Rra::new(
-                Source::Indexed((9, 4)),
+                Operand::Indexed((9, 4)),
                 Some(OperandWidth::Word)
             )))
         );
@@ -544,7 +547,7 @@ mod tests {
         assert_eq!(
             inst,
             Ok(Instruction::Rra(Rra::new(
-                Source::Indexed((9, -4)),
+                Operand::Indexed((9, -4)),
                 Some(OperandWidth::Word)
             )))
         );
@@ -557,7 +560,7 @@ mod tests {
         assert_eq!(
             inst,
             Ok(Instruction::Rra(Rra::new(
-                Source::Indexed((9, 4)),
+                Operand::Indexed((9, 4)),
                 Some(OperandWidth::Byte)
             )))
         );
@@ -570,7 +573,7 @@ mod tests {
         assert_eq!(
             inst,
             Ok(Instruction::Rra(Rra::new(
-                Source::Indexed((9, -4)),
+                Operand::Indexed((9, -4)),
                 Some(OperandWidth::Byte)
             )))
         );
@@ -583,7 +586,7 @@ mod tests {
         assert_eq!(
             inst,
             Ok(Instruction::Rra(Rra::new(
-                Source::RegisterIndirect(9),
+                Operand::RegisterIndirect(9),
                 Some(OperandWidth::Word)
             )))
         );
@@ -596,7 +599,7 @@ mod tests {
         assert_eq!(
             inst,
             Ok(Instruction::Rra(Rra::new(
-                Source::RegisterIndirect(9),
+                Operand::RegisterIndirect(9),
                 Some(OperandWidth::Byte)
             )))
         );
@@ -609,7 +612,7 @@ mod tests {
         assert_eq!(
             inst,
             Ok(Instruction::Rra(Rra::new(
-                Source::RegisterIndirectAutoIncrement(9),
+                Operand::RegisterIndirectAutoIncrement(9),
                 Some(OperandWidth::Word)
             )))
         );
@@ -622,7 +625,7 @@ mod tests {
         assert_eq!(
             inst,
             Ok(Instruction::Rra(Rra::new(
-                Source::RegisterIndirectAutoIncrement(9),
+                Operand::RegisterIndirectAutoIncrement(9),
                 Some(OperandWidth::Byte)
             )))
         );
@@ -634,7 +637,7 @@ mod tests {
         let inst = decode(&data);
         assert_eq!(
             inst,
-            Ok(Instruction::Sxt(Sxt::new(Source::RegisterDirect(9), None)))
+            Ok(Instruction::Sxt(Sxt::new(Operand::RegisterDirect(9), None)))
         );
     }
 
@@ -644,7 +647,7 @@ mod tests {
         let inst = decode(&data);
         assert_eq!(
             inst,
-            Ok(Instruction::Sxt(Sxt::new(Source::Indexed((9, 4)), None)))
+            Ok(Instruction::Sxt(Sxt::new(Operand::Indexed((9, 4)), None)))
         );
     }
 
@@ -654,7 +657,7 @@ mod tests {
         let inst = decode(&data);
         assert_eq!(
             inst,
-            Ok(Instruction::Sxt(Sxt::new(Source::Indexed((9, -4)), None)))
+            Ok(Instruction::Sxt(Sxt::new(Operand::Indexed((9, -4)), None)))
         );
     }
 
@@ -665,7 +668,7 @@ mod tests {
         assert_eq!(
             inst,
             Ok(Instruction::Sxt(Sxt::new(
-                Source::RegisterIndirect(9),
+                Operand::RegisterIndirect(9),
                 None
             )))
         );
@@ -678,7 +681,7 @@ mod tests {
         assert_eq!(
             inst,
             Ok(Instruction::Sxt(Sxt::new(
-                Source::RegisterIndirectAutoIncrement(9),
+                Operand::RegisterIndirectAutoIncrement(9),
                 None
             )))
         );
@@ -691,7 +694,7 @@ mod tests {
         assert_eq!(
             inst,
             Ok(Instruction::Push(Push::new(
-                Source::RegisterDirect(9),
+                Operand::RegisterDirect(9),
                 Some(OperandWidth::Word)
             )))
         );
@@ -704,7 +707,7 @@ mod tests {
         assert_eq!(
             inst,
             Ok(Instruction::Push(Push::new(
-                Source::RegisterDirect(9),
+                Operand::RegisterDirect(9),
                 Some(OperandWidth::Byte)
             )))
         );
@@ -717,7 +720,7 @@ mod tests {
         assert_eq!(
             inst,
             Ok(Instruction::Push(Push::new(
-                Source::Indexed((9, 4)),
+                Operand::Indexed((9, 4)),
                 Some(OperandWidth::Word)
             )))
         );
@@ -730,7 +733,7 @@ mod tests {
         assert_eq!(
             inst,
             Ok(Instruction::Push(Push::new(
-                Source::Indexed((9, -4)),
+                Operand::Indexed((9, -4)),
                 Some(OperandWidth::Word)
             )))
         );
@@ -743,7 +746,7 @@ mod tests {
         assert_eq!(
             inst,
             Ok(Instruction::Push(Push::new(
-                Source::Indexed((9, 4)),
+                Operand::Indexed((9, 4)),
                 Some(OperandWidth::Byte)
             )))
         );
@@ -756,7 +759,7 @@ mod tests {
         assert_eq!(
             inst,
             Ok(Instruction::Push(Push::new(
-                Source::Indexed((9, -4)),
+                Operand::Indexed((9, -4)),
                 Some(OperandWidth::Byte)
             ))),
         );
@@ -769,7 +772,7 @@ mod tests {
         assert_eq!(
             inst,
             Ok(Instruction::Push(Push::new(
-                Source::RegisterIndirect(9),
+                Operand::RegisterIndirect(9),
                 Some(OperandWidth::Word)
             )))
         );
@@ -782,7 +785,7 @@ mod tests {
         assert_eq!(
             inst,
             Ok(Instruction::Push(Push::new(
-                Source::RegisterIndirect(9),
+                Operand::RegisterIndirect(9),
                 Some(OperandWidth::Byte)
             )))
         );
@@ -795,7 +798,7 @@ mod tests {
         assert_eq!(
             inst,
             Ok(Instruction::Push(Push::new(
-                Source::RegisterIndirectAutoIncrement(9),
+                Operand::RegisterIndirectAutoIncrement(9),
                 Some(OperandWidth::Word)
             )))
         );
@@ -808,7 +811,7 @@ mod tests {
         assert_eq!(
             inst,
             Ok(Instruction::Push(Push::new(
-                Source::RegisterIndirectAutoIncrement(9),
+                Operand::RegisterIndirectAutoIncrement(9),
                 Some(OperandWidth::Byte)
             )))
         );
@@ -821,7 +824,7 @@ mod tests {
         assert_eq!(
             inst,
             Ok(Instruction::Push(Push::new(
-                Source::Absolute(0x4400),
+                Operand::Absolute(0x4400),
                 Some(OperandWidth::Word)
             )))
         );
@@ -834,7 +837,7 @@ mod tests {
         assert_eq!(
             inst,
             Ok(Instruction::Push(Push::new(
-                Source::Constant(4),
+                Operand::Constant(4),
                 Some(OperandWidth::Word)
             )))
         );
@@ -847,7 +850,7 @@ mod tests {
         assert_eq!(
             inst,
             Ok(Instruction::Push(Push::new(
-                Source::Constant(8),
+                Operand::Constant(8),
                 Some(OperandWidth::Word)
             )))
         );
@@ -860,7 +863,7 @@ mod tests {
         assert_eq!(
             inst,
             Ok(Instruction::Push(Push::new(
-                Source::Constant(0),
+                Operand::Constant(0),
                 Some(OperandWidth::Word)
             )))
         );
@@ -873,7 +876,7 @@ mod tests {
         assert_eq!(
             inst,
             Ok(Instruction::Push(Push::new(
-                Source::Constant(1),
+                Operand::Constant(1),
                 Some(OperandWidth::Word)
             )))
         );
@@ -886,7 +889,7 @@ mod tests {
         assert_eq!(
             inst,
             Ok(Instruction::Push(Push::new(
-                Source::Constant(2),
+                Operand::Constant(2),
                 Some(OperandWidth::Word)
             )))
         );
@@ -899,7 +902,7 @@ mod tests {
         assert_eq!(
             inst,
             Ok(Instruction::Push(Push::new(
-                Source::Constant(-1),
+                Operand::Constant(-1),
                 Some(OperandWidth::Word)
             )))
         );
@@ -912,7 +915,7 @@ mod tests {
         assert_eq!(
             inst,
             Ok(Instruction::Call(Call::new(
-                Source::RegisterDirect(9),
+                Operand::RegisterDirect(9),
                 None
             )))
         );
@@ -924,7 +927,7 @@ mod tests {
         let inst = decode(&data);
         assert_eq!(
             inst,
-            Ok(Instruction::Call(Call::new(Source::Indexed((9, 4)), None)))
+            Ok(Instruction::Call(Call::new(Operand::Indexed((9, 4)), None)))
         );
     }
 
@@ -934,7 +937,10 @@ mod tests {
         let inst = decode(&data);
         assert_eq!(
             inst,
-            Ok(Instruction::Call(Call::new(Source::Indexed((9, -4)), None)))
+            Ok(Instruction::Call(Call::new(
+                Operand::Indexed((9, -4)),
+                None
+            )))
         );
     }
 
@@ -945,7 +951,7 @@ mod tests {
         assert_eq!(
             inst,
             Ok(Instruction::Call(Call::new(
-                Source::RegisterIndirect(9),
+                Operand::RegisterIndirect(9),
                 None
             )))
         );
@@ -958,7 +964,7 @@ mod tests {
         assert_eq!(
             inst,
             Ok(Instruction::Call(Call::new(
-                Source::RegisterIndirectAutoIncrement(9),
+                Operand::RegisterIndirectAutoIncrement(9),
                 None
             )))
         );
@@ -970,7 +976,7 @@ mod tests {
         let inst = decode(&data);
         assert_eq!(
             inst,
-            Ok(Instruction::Call(Call::new(Source::Symbolic(2), None)))
+            Ok(Instruction::Call(Call::new(Operand::Symbolic(2), None)))
         );
     }
 
@@ -980,7 +986,7 @@ mod tests {
         let inst = decode(&data);
         assert_eq!(
             inst,
-            Ok(Instruction::Call(Call::new(Source::Immediate(2), None)))
+            Ok(Instruction::Call(Call::new(Operand::Immediate(2), None)))
         );
     }
 

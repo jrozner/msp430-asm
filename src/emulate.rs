@@ -1,5 +1,5 @@
 use crate::instruction::Instruction;
-use crate::operand::{Destination, OperandWidth};
+use crate::operand::{Operand, OperandWidth};
 
 use std::fmt;
 
@@ -9,7 +9,7 @@ pub trait Emulate {
 
 pub trait Emulated {
     fn mnemonic(&self) -> &str;
-    fn destination(&self) -> &Option<Destination>;
+    fn destination(&self) -> &Option<Operand>;
     fn len(&self) -> usize;
     fn operand_width(&self) -> &Option<OperandWidth>;
 }
@@ -18,15 +18,12 @@ macro_rules! emulated {
     ($t:ident, $n:expr) => {
         #[derive(Debug, Clone, PartialEq)]
         pub struct $t {
-            destination: Option<Destination>,
+            destination: Option<Operand>,
             operand_width: Option<OperandWidth>,
         }
 
         impl $t {
-            pub fn new(
-                destination: Option<Destination>,
-                operand_width: Option<OperandWidth>,
-            ) -> $t {
+            pub fn new(destination: Option<Operand>, operand_width: Option<OperandWidth>) -> $t {
                 $t {
                     destination: destination,
                     operand_width: operand_width,
@@ -42,7 +39,7 @@ macro_rules! emulated {
                 }
             }
 
-            fn destination(&self) -> &Option<Destination> {
+            fn destination(&self) -> &Option<Operand> {
                 &self.destination
             }
 

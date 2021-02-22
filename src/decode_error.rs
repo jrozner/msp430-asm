@@ -12,29 +12,29 @@ pub enum DecodeError {
 impl std::fmt::Display for DecodeError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            DecodeError::MissingSource => {
+            Self::MissingSource => {
                 write!(f, "source operand is missing")
             }
-            DecodeError::MissingDestination => {
+            Self::MissingDestination => {
                 write!(f, "destination operand is missing")
             }
-            DecodeError::InvalidSource((source, register)) => {
+            Self::InvalidSource((source, register)) => {
                 write!(
                     f,
                     "source addressing mode ({}) for register ({}) is invalid",
                     source, register
                 )
             }
-            DecodeError::InvalidDestination => {
+            Self::InvalidDestination => {
                 write!(f, "destination addressing mode is invalid")
             }
-            DecodeError::MissingInstruction => {
+            Self::MissingInstruction => {
                 write!(f, "not enough data to decode instruction")
             }
-            DecodeError::InvalidOpcode(opcode) => {
+            Self::InvalidOpcode(opcode) => {
                 write!(f, "invalid opcode {}", opcode)
             }
-            DecodeError::InvalidJumpCondition(condition) => {
+            Self::InvalidJumpCondition(condition) => {
                 write!(f, "invalid jump condition {}", condition)
             }
         }

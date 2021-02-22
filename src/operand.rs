@@ -20,14 +20,14 @@ pub enum Operand {
 impl Operand {
     pub fn len(&self) -> usize {
         match self {
-            Operand::RegisterDirect(_) => 0,
-            Operand::Indexed(_) => 2,
-            Operand::RegisterIndirect(_) => 0,
-            Operand::RegisterIndirectAutoIncrement(_) => 0,
-            Operand::Symbolic(_) => 2,
-            Operand::Immediate(_) => 2,
-            Operand::Absolute(_) => 2,
-            Operand::Constant(_) => 0,
+            Self::RegisterDirect(_) => 0,
+            Self::Indexed(_) => 2,
+            Self::RegisterIndirect(_) => 0,
+            Self::RegisterIndirectAutoIncrement(_) => 0,
+            Self::Symbolic(_) => 2,
+            Self::Immediate(_) => 2,
+            Self::Absolute(_) => 2,
+            Self::Constant(_) => 0,
         }
     }
 }
@@ -35,14 +35,14 @@ impl Operand {
 impl fmt::Display for Operand {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Operand::RegisterDirect(r) => match r {
+            Self::RegisterDirect(r) => match r {
                 0 => write!(f, "pc"),
                 1 => write!(f, "sp"),
                 2 => write!(f, "sr"),
                 3 => write!(f, "cg"),
                 _ => write!(f, "r{}", r),
             },
-            Operand::Indexed((r, i)) => match r {
+            Self::Indexed((r, i)) => match r {
                 1 => {
                     if *i >= 0 {
                         write!(f, "{:#x}(sp)", i)
@@ -66,14 +66,14 @@ impl fmt::Display for Operand {
                 }
                 _ => unreachable!(),
             },
-            Operand::RegisterIndirect(r) => {
+            Self::RegisterIndirect(r) => {
                 if *r == 1 {
                     write!(f, "@sp")
                 } else {
                     write!(f, "@r{}", r)
                 }
             }
-            Operand::RegisterIndirectAutoIncrement(r) => {
+            Self::RegisterIndirectAutoIncrement(r) => {
                 if *r == 1 {
                     write!(f, "@sp+")
                 } else {
@@ -81,22 +81,22 @@ impl fmt::Display for Operand {
                 }
             }
             // TODO: is this correct? can you know what this is without knowing what PC is?
-            Operand::Symbolic(i) => {
+            Self::Symbolic(i) => {
                 if *i >= 0 {
                     write!(f, "#{:#x}(pc)", i)
                 } else {
                     write!(f, "#-{:#x}(pc)", i * -1)
                 }
             }
-            Operand::Immediate(i) => {
+            Self::Immediate(i) => {
                 if *i >= 0 {
                     write!(f, "#{:#x}", i)
                 } else {
                     write!(f, "#-{:#x}", i * -1)
                 }
             }
-            Operand::Absolute(a) => write!(f, "&{:#x}", a),
-            Operand::Constant(i) => {
+            Self::Absolute(a) => write!(f, "&{:#x}", a),
+            Self::Constant(i) => {
                 if *i >= 0 {
                     write!(f, "#{:#x}", i)
                 } else {

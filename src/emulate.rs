@@ -16,7 +16,7 @@ pub trait Emulated {
 
 macro_rules! emulated {
     ($t:ident, $n:expr) => {
-        #[derive(Debug, Clone, PartialEq)]
+        #[derive(Debug, Clone, Copy, PartialEq)]
         pub struct $t {
             destination: Option<Operand>,
             operand_width: Option<OperandWidth>,

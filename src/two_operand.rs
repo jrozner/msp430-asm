@@ -15,7 +15,7 @@ pub trait TwoOperand {
 
 macro_rules! two_operand {
     ($t:ident, $n:expr) => {
-        #[derive(Debug, Clone, PartialEq)]
+        #[derive(Debug, Clone, Copy, PartialEq)]
         pub struct $t {
             source: Operand,
             operand_width: OperandWidth,

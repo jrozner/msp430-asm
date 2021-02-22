@@ -5,7 +5,7 @@ use crate::two_operand::*;
 
 use std::fmt;
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub enum Instruction {
     // single operand instructions
     Rrc(Rrc),

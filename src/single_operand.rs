@@ -11,7 +11,7 @@ pub trait SingleOperand {
 
 macro_rules! single_operand {
     ($t:ident, $n:expr) => {
-        #[derive(Debug, Clone, PartialEq)]
+        #[derive(Debug, Clone, Copy, PartialEq)]
         pub struct $t {
             source: Operand,
             operand_width: Option<OperandWidth>,

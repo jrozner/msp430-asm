@@ -20,13 +20,25 @@ macro_rules! emulated {
         pub struct $t {
             destination: Option<Operand>,
             operand_width: Option<OperandWidth>,
+            // we need to store the size because emulation does not keep the
+            // original source and destination which makes it a lossy
+            // process. There are certain instructions where the source could
+            // use different addressing modes or that can be assembled in
+            // multiple ways
+            // (eg. mov #0, r15; [using immediate 0x0000 or constant #0])
+            len: usize,
         }
 
         impl $t {
-            pub fn new(destination: Option<Operand>, operand_width: Option<OperandWidth>) -> $t {
+            pub fn new(
+                destination: Option<Operand>,
+                operand_width: Option<OperandWidth>,
+                len: usize,
+            ) -> $t {
                 $t {
                     destination: destination,
                     operand_width: operand_width,
+                    len: len,
                 }
             }
         }
@@ -44,10 +56,7 @@ macro_rules! emulated {
             }
 
             fn len(&self) -> usize {
-                match self.destination {
-                    Some(d) => 2 + d.len(),
-                    None => 2,
-                }
+                self.len
             }
 
             fn operand_width(&self) -> &Option<OperandWidth> {

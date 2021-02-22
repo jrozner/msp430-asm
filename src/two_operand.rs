@@ -76,23 +76,38 @@ two_operand!(Mov, "mov");
 impl Emulate for Mov {
     fn emulate(&self) -> Option<Instruction> {
         if self.source == Operand::Constant(0) && self.destination == Operand::RegisterDirect(3) {
-            return Some(Instruction::Nop(emulate::Nop::new(None, None)));
+            return Some(Instruction::Nop(emulate::Nop::new(None, None, self.len())));
+        }
+
+        if self.source == Operand::Constant(0) || self.source == Operand::Immediate(0) {
+            if let Operand::RegisterDirect(_) = self.destination {
+                return Some(Instruction::Clr(emulate::Clr::new(
+                    Some(self.destination),
+                    None,
+                    self.len(),
+                )));
+            }
         }
 
         if self.source == Operand::RegisterIndirectAutoIncrement(1) {
             if self.destination == Operand::RegisterDirect(0) {
-                return Some(Instruction::Ret(emulate::Ret::new(None, None)));
+                return Some(Instruction::Ret(emulate::Ret::new(None, None, self.len())));
             } else {
                 return Some(Instruction::Pop(emulate::Pop::new(
                     Some(self.destination),
                     Some(self.operand_width),
+                    self.len(),
                 )));
             }
         }
 
         // TODO: We need to pass self.source here
         if self.destination == Operand::RegisterDirect(0) {
-            return Some(Instruction::Br(emulate::Br::new(Some(self.source), None)));
+            return Some(Instruction::Br(emulate::Br::new(
+                Some(self.source),
+                None,
+                self.len(),
+            )));
         }
 
         None
@@ -107,16 +122,19 @@ impl Emulate for Add {
             Some(Instruction::Inc(emulate::Inc::new(
                 Some(self.destination),
                 None,
+                self.len(),
             )))
         } else if self.source == Operand::Constant(2) {
             Some(Instruction::Incd(emulate::Incd::new(
                 Some(self.destination),
                 None,
+                self.len(),
             )))
         } else if self.source == self.destination {
             Some(Instruction::Rla(emulate::Rla::new(
                 Some(self.destination),
                 Some(self.operand_width),
+                self.len(),
             )))
         } else {
             None
@@ -132,11 +150,13 @@ impl Emulate for Addc {
             Some(Instruction::Adc(emulate::Adc::new(
                 Some(self.destination),
                 Some(self.operand_width),
+                self.len(),
             )))
         } else if self.source == self.destination {
             Some(Instruction::Rlc(emulate::Rlc::new(
                 Some(self.destination),
                 Some(self.operand_width),
+                self.len(),
             )))
         } else {
             None
@@ -152,6 +172,7 @@ impl Emulate for Subc {
             Some(Instruction::Sbc(emulate::Sbc::new(
                 Some(self.destination),
                 Some(self.operand_width),
+                self.len(),
             )))
         } else {
             None
@@ -167,11 +188,13 @@ impl Emulate for Sub {
             Some(Instruction::Dec(emulate::Dec::new(
                 Some(self.destination),
                 Some(self.operand_width),
+                self.len(),
             )))
         } else if self.source == Operand::Constant(2) {
             Some(Instruction::Decd(emulate::Decd::new(
                 Some(self.destination),
                 Some(self.operand_width),
+                self.len(),
             )))
         } else {
             None
@@ -187,6 +210,7 @@ impl Emulate for Cmp {
             Some(Instruction::Tst(emulate::Tst::new(
                 Some(self.destination),
                 Some(self.operand_width),
+                self.len(),
             )))
         } else {
             None
@@ -202,6 +226,7 @@ impl Emulate for Dadd {
             Some(Instruction::Dadc(emulate::Dadc::new(
                 Some(self.destination),
                 Some(self.operand_width),
+                self.len(),
             )))
         } else {
             None
@@ -217,16 +242,32 @@ impl Emulate for Bic {
         if self.destination == Operand::RegisterDirect(2) {
             match self.source {
                 Operand::Constant(1) => {
-                    return Some(Instruction::Clrc(emulate::Clrc::new(None, None)))
+                    return Some(Instruction::Clrc(emulate::Clrc::new(
+                        None,
+                        None,
+                        self.len(),
+                    )))
                 }
                 Operand::Constant(2) => {
-                    return Some(Instruction::Clrn(emulate::Clrn::new(None, None)))
+                    return Some(Instruction::Clrn(emulate::Clrn::new(
+                        None,
+                        None,
+                        self.len(),
+                    )))
                 }
                 Operand::Constant(4) => {
-                    return Some(Instruction::Clrz(emulate::Clrz::new(None, None)))
+                    return Some(Instruction::Clrz(emulate::Clrz::new(
+                        None,
+                        None,
+                        self.len(),
+                    )))
                 }
                 Operand::Constant(8) => {
-                    return Some(Instruction::Dint(emulate::Dint::new(None, None)))
+                    return Some(Instruction::Dint(emulate::Dint::new(
+                        None,
+                        None,
+                        self.len(),
+                    )))
                 }
                 _ => {}
             }
@@ -243,16 +284,32 @@ impl Emulate for Bis {
         if self.destination == Operand::RegisterDirect(2) {
             match self.source {
                 Operand::Constant(1) => {
-                    return Some(Instruction::Setc(emulate::Setc::new(None, None)))
+                    return Some(Instruction::Setc(emulate::Setc::new(
+                        None,
+                        None,
+                        self.len(),
+                    )))
                 }
                 Operand::Constant(2) => {
-                    return Some(Instruction::Setz(emulate::Setz::new(None, None)))
+                    return Some(Instruction::Setz(emulate::Setz::new(
+                        None,
+                        None,
+                        self.len(),
+                    )))
                 }
                 Operand::Constant(4) => {
-                    return Some(Instruction::Setn(emulate::Setn::new(None, None)))
+                    return Some(Instruction::Setn(emulate::Setn::new(
+                        None,
+                        None,
+                        self.len(),
+                    )))
                 }
                 Operand::Constant(8) => {
-                    return Some(Instruction::Eint(emulate::Eint::new(None, None)))
+                    return Some(Instruction::Eint(emulate::Eint::new(
+                        None,
+                        None,
+                        self.len(),
+                    )))
                 }
                 _ => {}
             }
@@ -270,6 +327,7 @@ impl Emulate for Xor {
             Some(Instruction::Inv(emulate::Inv::new(
                 Some(self.destination),
                 Some(self.operand_width),
+                self.len(),
             )))
         } else {
             None

@@ -124,9 +124,14 @@ impl From<u8> for OperandWidth {
 }
 
 pub fn parse_source(register: u8, source: u16, data: &[u8]) -> Result<(Operand, &[u8])> {
-    match register {
-        0 => match source {
-            1 => {
+    match source {
+        0 => match register {
+            3 => Ok((Operand::Constant(0), data)),
+            0..=2 | 4..=15 => Ok((Operand::RegisterDirect(register), data)),
+            _ => Err(DecodeError::InvalidSource((source, register))),
+        },
+        1 => match register {
+            0 => {
                 if data.len() < 2 {
                     Err(DecodeError::MissingSource)
                 } else {
@@ -136,20 +141,7 @@ pub fn parse_source(register: u8, source: u16, data: &[u8]) -> Result<(Operand, 
                     Ok((Operand::Symbolic(second_word), remaining_data))
                 }
             }
-            3 => {
-                if data.len() < 2 {
-                    Err(DecodeError::MissingSource)
-                } else {
-                    let (bytes, remaining_data) = data.split_at(std::mem::size_of::<u16>());
-                    let second_word =
-                        ones_complement(u16::from_le_bytes(bytes.try_into().unwrap()));
-                    Ok((Operand::Immediate(second_word), remaining_data))
-                }
-            }
-            _ => Err(DecodeError::InvalidSource((source, register))),
-        },
-        2 => match source {
-            1 => {
+            2 => {
                 if data.len() < 2 {
                     Err(DecodeError::MissingSource)
                 } else {
@@ -158,20 +150,8 @@ pub fn parse_source(register: u8, source: u16, data: &[u8]) -> Result<(Operand, 
                     Ok((Operand::Absolute(second_word), remaining_data))
                 }
             }
-            2 => Ok((Operand::Constant(4), data)),
-            3 => Ok((Operand::Constant(8), data)),
-            _ => Err(DecodeError::InvalidSource((source, register))),
-        },
-        3 => match source {
-            0 => Ok((Operand::Constant(0), data)),
-            1 => Ok((Operand::Constant(1), data)),
-            2 => Ok((Operand::Constant(2), data)),
-            3 => Ok((Operand::Constant(-1), data)),
-            _ => Err(DecodeError::InvalidSource((source, register))),
-        },
-        _ => match source {
-            0 => Ok((Operand::RegisterDirect(register), data)),
-            1 => {
+            3 => Ok((Operand::Constant(1), data)),
+            1 | 4..=15 => {
                 if data.len() < 2 {
                     Err(DecodeError::MissingSource)
                 } else {
@@ -181,10 +161,31 @@ pub fn parse_source(register: u8, source: u16, data: &[u8]) -> Result<(Operand, 
                     Ok((Operand::Indexed((register, second_word)), remaining_data))
                 }
             }
-            2 => Ok((Operand::RegisterIndirect(register), data)),
-            3 => Ok((Operand::RegisterIndirectAutoIncrement(register), data)),
             _ => Err(DecodeError::InvalidSource((source, register))),
         },
+        2 => match register {
+            2 => Ok((Operand::Constant(4), data)),
+            3 => Ok((Operand::Constant(2), data)),
+            0..=1 | 4..=15 => Ok((Operand::RegisterIndirect(register), data)),
+            _ => Err(DecodeError::InvalidSource((source, register))),
+        },
+        3 => match register {
+            0 => {
+                if data.len() < 2 {
+                    Err(DecodeError::MissingSource)
+                } else {
+                    let (bytes, remaining_data) = data.split_at(std::mem::size_of::<u16>());
+                    let second_word =
+                        ones_complement(u16::from_le_bytes(bytes.try_into().unwrap()));
+                    Ok((Operand::Immediate(second_word), remaining_data))
+                }
+            }
+            2 => Ok((Operand::Constant(8), data)),
+            3 => Ok((Operand::Constant(-1), data)),
+            1 | 4..=15 => Ok((Operand::RegisterIndirectAutoIncrement(register), data)),
+            _ => Err(DecodeError::InvalidSource((source, register))),
+        },
+        _ => Err(DecodeError::InvalidSource((source, register))),
     }
 }
 

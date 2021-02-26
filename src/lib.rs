@@ -996,4 +996,17 @@ mod tests {
         let inst = decode(&data);
         assert_eq!(inst, Ok(Instruction::Reti(Reti::new())));
     }
+
+    #[test]
+    fn push_sr() {
+        let data = [0x02, 0x12];
+        let inst = decode(&data);
+        assert_eq!(
+            inst,
+            Ok(Instruction::Push(Push::new(
+                Operand::RegisterDirect(2),
+                Some(OperandWidth::Word),
+            )))
+        );
+    }
 }

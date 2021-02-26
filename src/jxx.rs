@@ -2,7 +2,7 @@ use std::fmt;
 
 pub fn jxx_fix_offset(offset: u16) -> i16 {
     if offset & 0b10_0000_0000 > 0 {
-        -1 * (0b0000_0011_1111_1111 & !offset) as i16
+        (offset | 0xfc00) as i16
     } else {
         offset as i16
     }

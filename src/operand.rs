@@ -1,7 +1,6 @@
 use std::convert::TryInto;
 use std::fmt;
 
-use crate::ones_complement;
 use crate::DecodeError;
 use crate::Result;
 
@@ -136,8 +135,7 @@ pub fn parse_source(register: u8, source: u16, data: &[u8]) -> Result<(Operand, 
                     Err(DecodeError::MissingSource)
                 } else {
                     let (bytes, remaining_data) = data.split_at(std::mem::size_of::<u16>());
-                    let second_word =
-                        ones_complement(u16::from_le_bytes(bytes.try_into().unwrap()));
+                    let second_word = i16::from_le_bytes(bytes.try_into().unwrap());
                     Ok((Operand::Symbolic(second_word), remaining_data))
                 }
             }
@@ -156,8 +154,7 @@ pub fn parse_source(register: u8, source: u16, data: &[u8]) -> Result<(Operand, 
                     Err(DecodeError::MissingSource)
                 } else {
                     let (bytes, remaining_data) = data.split_at(std::mem::size_of::<u16>());
-                    let second_word =
-                        ones_complement(u16::from_le_bytes(bytes.try_into().unwrap()));
+                    let second_word = i16::from_le_bytes(bytes.try_into().unwrap());
                     Ok((Operand::Indexed((register, second_word)), remaining_data))
                 }
             }
@@ -175,8 +172,7 @@ pub fn parse_source(register: u8, source: u16, data: &[u8]) -> Result<(Operand, 
                     Err(DecodeError::MissingSource)
                 } else {
                     let (bytes, remaining_data) = data.split_at(std::mem::size_of::<u16>());
-                    let second_word =
-                        ones_complement(u16::from_le_bytes(bytes.try_into().unwrap()));
+                    let second_word = i16::from_le_bytes(bytes.try_into().unwrap());
                     Ok((Operand::Immediate(second_word), remaining_data))
                 }
             }
@@ -198,11 +194,11 @@ pub fn parse_destination(register: u8, source: u16, data: &[u8]) -> Result<Opera
             } else {
                 let (bytes, _) = data[0..2].split_at(std::mem::size_of::<u16>());
                 let raw_operand = u16::from_le_bytes(bytes.try_into().unwrap());
-                let index = ones_complement(raw_operand);
+                let index = raw_operand;
                 match register {
-                    0 => Ok(Operand::Symbolic(index)),
+                    0 => Ok(Operand::Symbolic(index as i16)),
                     2 => Ok(Operand::Absolute(raw_operand)),
-                    1 | 3..=15 => Ok(Operand::Indexed((register, index))),
+                    1 | 3..=15 => Ok(Operand::Indexed((register, index as i16))),
                     _ => Err(DecodeError::InvalidDestination),
                 }
             }
@@ -240,7 +236,7 @@ mod tests {
     fn source_pc_immediate_negative() {
         let data = [0xfe, 0xff];
         let source = parse_source(0, 3, &data);
-        assert_eq!(source, Ok((Operand::Immediate(-1), &data[2..])));
+        assert_eq!(source, Ok((Operand::Immediate(-2), &data[2..])));
     }
 
     #[test]
@@ -345,7 +341,7 @@ mod tests {
     fn source_gp_register_indexed_negative() {
         let data = [0xfd, 0xff];
         let source = parse_source(9, 1, &data);
-        assert_eq!(source, Ok((Operand::Indexed((9, -2)), &data[2..])));
+        assert_eq!(source, Ok((Operand::Indexed((9, -3)), &data[2..])));
     }
 
     #[test]
@@ -390,7 +386,7 @@ mod tests {
     fn destination_register_indexed_negative() {
         let data = [0xfe, 0xff];
         let destination = parse_destination(9, 1, &data);
-        assert_eq!(destination, Ok(Operand::Indexed((9, -1))));
+        assert_eq!(destination, Ok(Operand::Indexed((9, -2))));
     }
 
     #[test]
@@ -404,7 +400,7 @@ mod tests {
     fn destination_register_symbolic_negative() {
         let data = [0xfe, 0xff];
         let destination = parse_destination(0, 1, &data);
-        assert_eq!(destination, Ok(Operand::Symbolic(-1)));
+        assert_eq!(destination, Ok(Operand::Symbolic(-2)));
     }
 
     #[test]

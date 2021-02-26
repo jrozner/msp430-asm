@@ -227,14 +227,6 @@ pub fn decode(data: &[u8]) -> Result<Instruction> {
     }
 }
 
-fn ones_complement(val: u16) -> i16 {
-    if 0b1000_0000_0000_0000 & val > 0 {
-        -1 * !val as i16
-    } else {
-        val as i16
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -257,7 +249,7 @@ mod tests {
     fn negative_jnz() {
         let data = [0xf9, 0x23];
         let inst = decode(&data);
-        assert_eq!(inst, Ok(Instruction::Jnz(Jnz::new(-6))));
+        assert_eq!(inst, Ok(Instruction::Jnz(Jnz::new(-7))));
     }
 
     #[test]
@@ -355,7 +347,7 @@ mod tests {
         assert_eq!(
             inst,
             Ok(Instruction::Rrc(Rrc::new(
-                Operand::Indexed((9, -4)),
+                Operand::Indexed((9, -5)),
                 Some(OperandWidth::Word)
             )))
         );
@@ -381,7 +373,7 @@ mod tests {
         assert_eq!(
             inst,
             Ok(Instruction::Rrc(Rrc::new(
-                Operand::Indexed((9, -4)),
+                Operand::Indexed((9, -5)),
                 Some(OperandWidth::Byte)
             )))
         );
@@ -469,7 +461,7 @@ mod tests {
         assert_eq!(
             inst,
             Ok(Instruction::Swpb(Swpb::new(
-                Operand::Indexed((9, -4)),
+                Operand::Indexed((9, -5)),
                 None
             )))
         );
@@ -547,7 +539,7 @@ mod tests {
         assert_eq!(
             inst,
             Ok(Instruction::Rra(Rra::new(
-                Operand::Indexed((9, -4)),
+                Operand::Indexed((9, -5)),
                 Some(OperandWidth::Word)
             )))
         );
@@ -573,7 +565,7 @@ mod tests {
         assert_eq!(
             inst,
             Ok(Instruction::Rra(Rra::new(
-                Operand::Indexed((9, -4)),
+                Operand::Indexed((9, -5)),
                 Some(OperandWidth::Byte)
             )))
         );
@@ -657,7 +649,7 @@ mod tests {
         let inst = decode(&data);
         assert_eq!(
             inst,
-            Ok(Instruction::Sxt(Sxt::new(Operand::Indexed((9, -4)), None)))
+            Ok(Instruction::Sxt(Sxt::new(Operand::Indexed((9, -5)), None)))
         );
     }
 
@@ -733,7 +725,7 @@ mod tests {
         assert_eq!(
             inst,
             Ok(Instruction::Push(Push::new(
-                Operand::Indexed((9, -4)),
+                Operand::Indexed((9, -5)),
                 Some(OperandWidth::Word)
             )))
         );
@@ -759,7 +751,7 @@ mod tests {
         assert_eq!(
             inst,
             Ok(Instruction::Push(Push::new(
-                Operand::Indexed((9, -4)),
+                Operand::Indexed((9, -5)),
                 Some(OperandWidth::Byte)
             ))),
         );
@@ -938,7 +930,7 @@ mod tests {
         assert_eq!(
             inst,
             Ok(Instruction::Call(Call::new(
-                Operand::Indexed((9, -4)),
+                Operand::Indexed((9, -5)),
                 None
             )))
         );

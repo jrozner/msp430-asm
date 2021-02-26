@@ -87,12 +87,6 @@ pub fn decode(data: &[u8]) -> Result<Instruction> {
             let operand_width =
                 OperandWidth::from(((SINGLE_OPERAND_WIDTH_MASK & first_word) >> 6) as u8);
 
-            // RETI is a special condition where the source addressing,
-            // operand, and operand width are are fixed
-            if opcode == RETI_OPCODE {
-                return Ok(Instruction::Reti(Reti::new()));
-            }
-
             let (source, _) = operand::parse_source(register, source_addressing, remaining_data)?;
 
             match opcode {
@@ -102,6 +96,7 @@ pub fn decode(data: &[u8]) -> Result<Instruction> {
                 SXT_OPCODE => Ok(Instruction::Sxt(Sxt::new(source, None))),
                 PUSH_OPCODE => Ok(Instruction::Push(Push::new(source, Some(operand_width)))),
                 CALL_OPCODE => Ok(Instruction::Call(Call::new(source, None))),
+                RETI_OPCODE => Ok(Instruction::Reti(Reti::new())),
                 _ => Err(DecodeError::InvalidOpcode(opcode)),
             }
         }

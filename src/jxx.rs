@@ -11,7 +11,7 @@ pub fn jxx_fix_offset(offset: u16) -> i16 {
 pub trait Jxx {
     fn mnemonic(&self) -> &str;
     fn offset(&self) -> i16;
-    fn len(&self) -> usize;
+    fn size(&self) -> usize;
 }
 
 macro_rules! jxx {
@@ -23,7 +23,7 @@ macro_rules! jxx {
 
         impl $t {
             pub fn new(offset: i16) -> $t {
-                $t { offset: offset }
+                $t { offset }
             }
         }
 
@@ -36,7 +36,7 @@ macro_rules! jxx {
                 self.offset
             }
 
-            fn len(&self) -> usize {
+            fn size(&self) -> usize {
                 2
             }
         }
@@ -49,7 +49,7 @@ macro_rules! jxx {
                 // should probably implement a better fix that is more
                 // efficient https://github.com/rust-lang/rust/issues/42860
                 if self.offset < 0 {
-                    write!(f, "{} #-{:#x}", $n, self.offset * -1)
+                    write!(f, "{} #-{:#x}", $n, -self.offset)
                 } else {
                     write!(f, "{} #{:#x}", $n, self.offset)
                 }

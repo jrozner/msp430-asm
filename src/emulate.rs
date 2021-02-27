@@ -11,7 +11,7 @@ pub trait Emulate {
 pub trait Emulated {
     fn mnemonic(&self) -> &str;
     fn destination(&self) -> &Option<Operand>;
-    fn len(&self) -> usize;
+    fn size(&self) -> usize;
     fn operand_width(&self) -> &Option<OperandWidth>;
 }
 
@@ -37,9 +37,9 @@ macro_rules! emulated {
                 original: $o,
             ) -> $t {
                 $t {
-                    destination: destination,
-                    operand_width: operand_width,
-                    original: original,
+                    destination,
+                    operand_width,
+                    original,
                 }
             }
         }
@@ -56,8 +56,8 @@ macro_rules! emulated {
                 &self.destination
             }
 
-            fn len(&self) -> usize {
-                self.original.len()
+            fn size(&self) -> usize {
+                self.original.size()
             }
 
             fn operand_width(&self) -> &Option<OperandWidth> {

@@ -17,7 +17,7 @@ pub enum Operand {
 }
 
 impl Operand {
-    pub fn len(&self) -> usize {
+    pub fn size(&self) -> usize {
         match self {
             Self::RegisterDirect(_) => 0,
             Self::Indexed(_) => 2,
@@ -46,21 +46,21 @@ impl fmt::Display for Operand {
                     if *i >= 0 {
                         write!(f, "{:#x}(sp)", i)
                     } else {
-                        write!(f, "-{:#x}(sp)", i * -1)
+                        write!(f, "-{:#x}(sp)", -i)
                     }
                 }
                 3 => {
                     if *i >= 0 {
                         write!(f, "{:#x}(cg)", i)
                     } else {
-                        write!(f, "-{:#x}(cg)", i * -1)
+                        write!(f, "-{:#x}(cg)", -i)
                     }
                 }
                 4..=15 => {
                     if *i >= 0 {
                         write!(f, "{:#x}(r{})", i, r)
                     } else {
-                        write!(f, "-{:#x}(r{})", i * -1, r)
+                        write!(f, "-{:#x}(r{})", -i, r)
                     }
                 }
                 _ => unreachable!(),
@@ -84,14 +84,14 @@ impl fmt::Display for Operand {
                 if *i >= 0 {
                     write!(f, "#{:#x}(pc)", i)
                 } else {
-                    write!(f, "#-{:#x}(pc)", i * -1)
+                    write!(f, "#-{:#x}(pc)", -i)
                 }
             }
             Self::Immediate(i) => {
                 if *i >= 0 {
                     write!(f, "#{:#x}", i)
                 } else {
-                    write!(f, "#-{:#x}", i * -1)
+                    write!(f, "#-{:#x}", -i)
                 }
             }
             Self::Absolute(a) => write!(f, "&{:#x}", a),
@@ -99,7 +99,7 @@ impl fmt::Display for Operand {
                 if *i >= 0 {
                     write!(f, "#{:#x}", i)
                 } else {
-                    write!(f, "#-{:#x}", i * -1)
+                    write!(f, "#-{:#x}", -i)
                 }
             }
         }

@@ -9,7 +9,7 @@ pub trait TwoOperand {
     fn mnemonic(&self) -> &str;
     fn source(&self) -> &Operand;
     fn destination(&self) -> &Operand;
-    fn len(&self) -> usize;
+    fn size(&self) -> usize;
     fn operand_width(&self) -> &OperandWidth;
 }
 
@@ -25,9 +25,9 @@ macro_rules! two_operand {
         impl $t {
             pub fn new(source: Operand, operand_width: OperandWidth, destination: Operand) -> $t {
                 $t {
-                    source: source,
-                    operand_width: operand_width,
-                    destination: destination,
+                    source,
+                    operand_width,
+                    destination,
                 }
             }
         }
@@ -48,8 +48,8 @@ macro_rules! two_operand {
                 &self.destination
             }
 
-            fn len(&self) -> usize {
-                2 + self.source.len() + self.destination.len()
+            fn size(&self) -> usize {
+                2 + self.source.size() + self.destination.size()
             }
 
             fn operand_width(&self) -> &OperandWidth {

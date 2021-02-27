@@ -5,7 +5,7 @@ use std::fmt;
 pub trait SingleOperand {
     fn mnemonic(&self) -> &str;
     fn source(&self) -> &Operand;
-    fn len(&self) -> usize;
+    fn size(&self) -> usize;
     fn operand_width(&self) -> &Option<OperandWidth>;
 }
 
@@ -20,8 +20,8 @@ macro_rules! single_operand {
         impl $t {
             pub fn new(source: Operand, operand_width: Option<OperandWidth>) -> $t {
                 $t {
-                    source: source,
-                    operand_width: operand_width,
+                    source,
+                    operand_width,
                 }
             }
         }
@@ -38,8 +38,8 @@ macro_rules! single_operand {
                 &self.source
             }
 
-            fn len(&self) -> usize {
-                2 + self.source.len()
+            fn size(&self) -> usize {
+                2 + self.source.size()
             }
 
             fn operand_width(&self) -> &Option<OperandWidth> {
@@ -62,7 +62,7 @@ single_operand!(Sxt, "sxt");
 single_operand!(Push, "push");
 single_operand!(Call, "call");
 
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq, Default)]
 pub struct Reti {}
 
 impl Reti {
@@ -70,7 +70,7 @@ impl Reti {
         Reti {}
     }
 
-    pub fn len(&self) -> usize {
+    pub fn size(&self) -> usize {
         2
     }
 }

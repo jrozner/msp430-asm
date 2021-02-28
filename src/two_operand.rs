@@ -108,7 +108,6 @@ impl Emulate for Mov {
             }
         }
 
-        // TODO: We need to pass self.source here
         if self.destination == Operand::RegisterDirect(0) {
             return Some(Instruction::Br(emulate::Br::new(
                 Some(self.source),

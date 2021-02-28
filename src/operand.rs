@@ -110,7 +110,6 @@ impl fmt::Display for Operand {
                     write!(f, "@r{}+", r)
                 }
             }
-            // TODO: is this correct? can you know what this is without knowing what PC is?
             Self::Symbolic(i) => {
                 if *i >= 0 {
                     write!(f, "#{:#x}(pc)", i)

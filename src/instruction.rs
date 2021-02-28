@@ -5,6 +5,7 @@ use crate::two_operand::*;
 
 use std::fmt;
 
+/// A container that holds all types of instructions (including emulated)
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum Instruction {
     // single operand instructions

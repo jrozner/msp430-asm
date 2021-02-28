@@ -8,6 +8,8 @@ pub fn jxx_fix_offset(offset: u16) -> i16 {
     }
 }
 
+/// All jxx instructions implement this trait to provide a common interface
+/// and polymorphism
 pub trait Jxx {
     fn mnemonic(&self) -> &str;
     fn offset(&self) -> i16;

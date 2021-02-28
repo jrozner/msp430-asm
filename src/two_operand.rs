@@ -5,11 +5,18 @@ use crate::emulate::Emulate;
 use crate::instruction::Instruction;
 use crate::operand::{Operand, OperandWidth};
 
+/// All two operand instructions implement this trait to provide a common
+/// interface and polymorphism
 pub trait TwoOperand {
+    /// Return the mnemonic for the instruction. This is operand width aware
     fn mnemonic(&self) -> &str;
+    /// Returns the source operand
     fn source(&self) -> &Operand;
+    /// Returns the destination operand
     fn destination(&self) -> &Operand;
+    /// Returns the size of the instruction (in bytes)
     fn size(&self) -> usize;
+    /// Returns the operand width
     fn operand_width(&self) -> &OperandWidth;
 }
 

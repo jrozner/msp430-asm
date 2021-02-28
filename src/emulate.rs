@@ -4,14 +4,25 @@ use crate::operand::{Operand, OperandWidth};
 use crate::two_operand::*;
 use std::fmt;
 
+/// All instructions that can emulate an instruction implement Emulate so
+/// that the decoding step can determine if a decoded instruction emulates
+/// another
 pub trait Emulate {
     fn emulate(self) -> Option<Instruction>;
 }
 
+/// All emulated instructions implement this trait to provide a common
+/// interface and polymorphism
 pub trait Emulated {
+    /// Return the mnemonic for the instruction. This is operand width aware
     fn mnemonic(&self) -> &str;
+    /// Returns the destination operand
     fn destination(&self) -> &Option<Operand>;
+    /// Returns the size of the instruction (in bytes). This should defer to
+    /// the original instruction due to the fact that emulation is a lossy
+    /// process
     fn size(&self) -> usize;
+    /// Returns the operand width if one is specified
     fn operand_width(&self) -> &Option<OperandWidth>;
 }
 

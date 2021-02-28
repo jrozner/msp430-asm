@@ -2,10 +2,16 @@ use crate::operand::{Operand, OperandWidth};
 
 use std::fmt;
 
+/// All single operand instructions implement this trait to provide a common
+/// interface and polymorphism
 pub trait SingleOperand {
+    /// Return the mnemonic for the instruction. This is operand width aware
     fn mnemonic(&self) -> &str;
+    /// Returns the source operand
     fn source(&self) -> &Operand;
+    /// Returns the size of the instruction (in bytes)
     fn size(&self) -> usize;
+    /// Returns the operand width if one is specified
     fn operand_width(&self) -> &Option<OperandWidth>;
 }
 

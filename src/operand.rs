@@ -4,15 +4,46 @@ use std::fmt;
 use crate::DecodeError;
 use crate::Result;
 
+/// Represents a source or destination operand. This represents all
+/// addressing mode represented by AS/AD with their corresponding register
+/// pairs. In msp430 the valid destination operands are a subset of the
+/// source operands. Due to cases in the implementation where it is necessary
+/// to sometimes use a source as a destination (br emulated instruction) or
+/// compare a source and a destination rather than create separate types for
+/// source and destination they share one. The enforcement that a valid
+/// destination is specified, as all operands are valid for source, is left
+/// to the implementation of the decoding logic or assembling logic.
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum Operand {
+    /// The operand is stored in the register
     RegisterDirect(u8),
+    /// The operand is stored at the offset of the address specified in the
+    /// register.
+    ///
+    /// This requires an additional word
     Indexed((u8, i16)),
+    /// The operand is stored at the address that is in the register
+    ///
+    /// This requires an additional word
     RegisterIndirect(u8),
+    /// The operand is stored at the address that is in the register and the
+    /// register is autoincremented by one word
     RegisterIndirectAutoIncrement(u8),
+    /// The operand is the value of the following word relative to PC
+    ///
+    /// This requires an additional word
     Symbolic(i16),
+    /// The operand is the immediate value following the instruction word
+    ///
+    /// This requires an additional word
     Immediate(i16),
+    /// The operand is stored at the address specified by the immediate value
+    /// after the instruction word
+    ///
+    /// This requires an additional word
     Absolute(u16),
+    /// The operand is a constant value specified by the combination of
+    /// register (SR or CG) and the addressing mode
     Constant(i8),
 }
 
@@ -106,6 +137,10 @@ impl fmt::Display for Operand {
     }
 }
 
+/// Specifies whether the operand (source or destination) will be used as a
+/// byte or a word.
+///
+/// The operand itself is always stored as a word for alignment reasons
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum OperandWidth {
     Byte,
@@ -122,6 +157,10 @@ impl From<u8> for OperandWidth {
     }
 }
 
+/// Parses a source operand from an input stream. This is only used for AS
+/// modes where the source operand is stored as an additional word of data.
+/// Otherwise the source operand can be fully decoded from just reading the
+/// the instruction word
 pub fn parse_source(register: u8, source: u16, data: &[u8]) -> Result<(Operand, &[u8])> {
     match source {
         0 => match register {
@@ -185,6 +224,10 @@ pub fn parse_source(register: u8, source: u16, data: &[u8]) -> Result<(Operand, 
     }
 }
 
+/// Parses a destination operand from an input stream. This is only used for
+/// AD modes where the destination operand is stored as an additional word
+/// of data. Otherwise the destination operand can be fully decoded from just
+/// reading the the instruction word
 pub fn parse_destination(register: u8, source: u16, data: &[u8]) -> Result<Operand> {
     match source {
         0 => Ok(Operand::RegisterDirect(register)),
@@ -199,11 +242,11 @@ pub fn parse_destination(register: u8, source: u16, data: &[u8]) -> Result<Opera
                     0 => Ok(Operand::Symbolic(index as i16)),
                     2 => Ok(Operand::Absolute(raw_operand)),
                     1 | 3..=15 => Ok(Operand::Indexed((register, index as i16))),
-                    _ => Err(DecodeError::InvalidDestination),
+                    _ => Err(DecodeError::InvalidDestination((source, register))),
                 }
             }
         }
-        _ => Err(DecodeError::InvalidDestination),
+        _ => Err(DecodeError::InvalidDestination((source, register))),
     }
 }
 

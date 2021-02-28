@@ -68,8 +68,15 @@ const TWO_OPERAND_WIDTH: u16 = 0b100_0000;
 const TWO_OPERAND_AS: u16 = 0b11_0000;
 const TWO_OPERAND_DESTINATION: u16 = 0b1111;
 
+/// Stores the return type for a decode
 pub type Result<T> = std::result::Result<T, DecodeError>;
 
+/// Decodes the next instruction represented in the slice passed to it. This
+/// will only decode a single instruction. To use this correctly to decode a
+/// series of instructions, you keep track of the number of the size of the
+/// last decoded instruction to remove those bytes from the input to correctly
+/// decode the next due to the fact that instructions are not fixed width and
+/// maybe 2, 4 or 6 bytes
 pub fn decode(data: &[u8]) -> Result<Instruction> {
     if data.len() < 2 {
         return Err(DecodeError::MissingInstruction);

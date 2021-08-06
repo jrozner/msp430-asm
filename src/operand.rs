@@ -456,6 +456,6 @@ mod tests {
     fn destination_invalid_source() {
         let data = [];
         let destination = parse_destination(9, 3, &data);
-        assert_eq!(destination, Err(DecodeError::InvalidDestination));
+        assert_eq!(destination, Err(DecodeError::InvalidDestination((3, 9))));
     }
 }

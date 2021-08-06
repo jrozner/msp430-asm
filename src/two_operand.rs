@@ -81,9 +81,9 @@ macro_rules! two_operand {
 two_operand!(Mov, "mov");
 
 impl Emulate for Mov {
-    fn emulate(self) -> Option<Instruction> {
+    fn emulate(&self) -> Option<Instruction> {
         if self.source == Operand::Constant(0) && self.destination == Operand::RegisterDirect(3) {
-            return Some(Instruction::Nop(emulate::Nop::new(None, None, self)));
+            return Some(Instruction::Nop(emulate::Nop::new(None, None, *self)));
         }
 
         if self.source == Operand::Constant(0) || self.source == Operand::Immediate(0) {
@@ -91,19 +91,19 @@ impl Emulate for Mov {
                 return Some(Instruction::Clr(emulate::Clr::new(
                     Some(self.destination),
                     None,
-                    self,
+                    *self,
                 )));
             }
         }
 
         if self.source == Operand::RegisterIndirectAutoIncrement(1) {
             if self.destination == Operand::RegisterDirect(0) {
-                return Some(Instruction::Ret(emulate::Ret::new(None, None, self)));
+                return Some(Instruction::Ret(emulate::Ret::new(None, None, *self)));
             } else {
                 return Some(Instruction::Pop(emulate::Pop::new(
                     Some(self.destination),
                     Some(self.operand_width),
-                    self,
+                    *self,
                 )));
             }
         }
@@ -112,7 +112,7 @@ impl Emulate for Mov {
             return Some(Instruction::Br(emulate::Br::new(
                 Some(self.source),
                 None,
-                self,
+                *self,
             )));
         }
 
@@ -123,24 +123,24 @@ impl Emulate for Mov {
 two_operand!(Add, "add");
 
 impl Emulate for Add {
-    fn emulate(self) -> Option<Instruction> {
+    fn emulate(&self) -> Option<Instruction> {
         if self.source == Operand::Constant(1) {
             Some(Instruction::Inc(emulate::Inc::new(
                 Some(self.destination),
                 None,
-                self,
+                *self,
             )))
         } else if self.source == Operand::Constant(2) {
             Some(Instruction::Incd(emulate::Incd::new(
                 Some(self.destination),
                 None,
-                self,
+                *self,
             )))
         } else if self.source == self.destination {
             Some(Instruction::Rla(emulate::Rla::new(
                 Some(self.destination),
                 Some(self.operand_width),
-                self,
+                *self,
             )))
         } else {
             None
@@ -151,18 +151,18 @@ impl Emulate for Add {
 two_operand!(Addc, "addc");
 
 impl Emulate for Addc {
-    fn emulate(self) -> Option<Instruction> {
+    fn emulate(&self) -> Option<Instruction> {
         if self.source == Operand::Constant(0) {
             Some(Instruction::Adc(emulate::Adc::new(
                 Some(self.destination),
                 Some(self.operand_width),
-                self,
+                *self,
             )))
         } else if self.source == self.destination {
             Some(Instruction::Rlc(emulate::Rlc::new(
                 Some(self.destination),
                 Some(self.operand_width),
-                self,
+                *self,
             )))
         } else {
             None
@@ -173,12 +173,12 @@ impl Emulate for Addc {
 two_operand!(Subc, "subc");
 
 impl Emulate for Subc {
-    fn emulate(self) -> Option<Instruction> {
+    fn emulate(&self) -> Option<Instruction> {
         if self.source == Operand::Constant(0) {
             Some(Instruction::Sbc(emulate::Sbc::new(
                 Some(self.destination),
                 Some(self.operand_width),
-                self,
+                *self,
             )))
         } else {
             None
@@ -189,18 +189,18 @@ impl Emulate for Subc {
 two_operand!(Sub, "sub");
 
 impl Emulate for Sub {
-    fn emulate(self) -> Option<Instruction> {
+    fn emulate(&self) -> Option<Instruction> {
         if self.source == Operand::Constant(1) {
             Some(Instruction::Dec(emulate::Dec::new(
                 Some(self.destination),
                 Some(self.operand_width),
-                self,
+                *self,
             )))
         } else if self.source == Operand::Constant(2) {
             Some(Instruction::Decd(emulate::Decd::new(
                 Some(self.destination),
                 Some(self.operand_width),
-                self,
+                *self,
             )))
         } else {
             None
@@ -211,12 +211,12 @@ impl Emulate for Sub {
 two_operand!(Cmp, "cmp");
 
 impl Emulate for Cmp {
-    fn emulate(self) -> Option<Instruction> {
+    fn emulate(&self) -> Option<Instruction> {
         if self.source == Operand::Constant(0) {
             Some(Instruction::Tst(emulate::Tst::new(
                 Some(self.destination),
                 Some(self.operand_width),
-                self,
+                *self,
             )))
         } else {
             None
@@ -227,12 +227,12 @@ impl Emulate for Cmp {
 two_operand!(Dadd, "dadd");
 
 impl Emulate for Dadd {
-    fn emulate(self) -> Option<Instruction> {
+    fn emulate(&self) -> Option<Instruction> {
         if self.source == Operand::Constant(0) {
             Some(Instruction::Dadc(emulate::Dadc::new(
                 Some(self.destination),
                 Some(self.operand_width),
-                self,
+                *self,
             )))
         } else {
             None
@@ -244,20 +244,20 @@ two_operand!(Bit, "bit");
 two_operand!(Bic, "bic");
 
 impl Emulate for Bic {
-    fn emulate(self) -> Option<Instruction> {
+    fn emulate(&self) -> Option<Instruction> {
         if self.destination == Operand::RegisterDirect(2) {
             match self.source {
                 Operand::Constant(1) => {
-                    return Some(Instruction::Clrc(emulate::Clrc::new(None, None, self)))
+                    return Some(Instruction::Clrc(emulate::Clrc::new(None, None, *self)))
                 }
                 Operand::Constant(2) => {
-                    return Some(Instruction::Clrn(emulate::Clrn::new(None, None, self)))
+                    return Some(Instruction::Clrn(emulate::Clrn::new(None, None, *self)))
                 }
                 Operand::Constant(4) => {
-                    return Some(Instruction::Clrz(emulate::Clrz::new(None, None, self)))
+                    return Some(Instruction::Clrz(emulate::Clrz::new(None, None, *self)))
                 }
                 Operand::Constant(8) => {
-                    return Some(Instruction::Dint(emulate::Dint::new(None, None, self)))
+                    return Some(Instruction::Dint(emulate::Dint::new(None, None, *self)))
                 }
                 _ => {}
             }
@@ -270,20 +270,20 @@ impl Emulate for Bic {
 two_operand!(Bis, "bis");
 
 impl Emulate for Bis {
-    fn emulate(self) -> Option<Instruction> {
+    fn emulate(&self) -> Option<Instruction> {
         if self.destination == Operand::RegisterDirect(2) {
             match self.source {
                 Operand::Constant(1) => {
-                    return Some(Instruction::Setc(emulate::Setc::new(None, None, self)))
+                    return Some(Instruction::Setc(emulate::Setc::new(None, None, *self)))
                 }
                 Operand::Constant(2) => {
-                    return Some(Instruction::Setz(emulate::Setz::new(None, None, self)))
+                    return Some(Instruction::Setz(emulate::Setz::new(None, None, *self)))
                 }
                 Operand::Constant(4) => {
-                    return Some(Instruction::Setn(emulate::Setn::new(None, None, self)))
+                    return Some(Instruction::Setn(emulate::Setn::new(None, None, *self)))
                 }
                 Operand::Constant(8) => {
-                    return Some(Instruction::Eint(emulate::Eint::new(None, None, self)))
+                    return Some(Instruction::Eint(emulate::Eint::new(None, None, *self)))
                 }
                 _ => {}
             }
@@ -296,12 +296,12 @@ impl Emulate for Bis {
 two_operand!(Xor, "xor");
 
 impl Emulate for Xor {
-    fn emulate(self) -> Option<Instruction> {
+    fn emulate(&self) -> Option<Instruction> {
         if self.source == Operand::Constant(-1) {
             Some(Instruction::Inv(emulate::Inv::new(
                 Some(self.destination),
                 Some(self.operand_width),
-                self,
+                *self,
             )))
         } else {
             None

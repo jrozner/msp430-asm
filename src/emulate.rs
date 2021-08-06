@@ -8,7 +8,7 @@ use std::fmt;
 /// that the decoding step can determine if a decoded instruction emulates
 /// another
 pub trait Emulate {
-    fn emulate(self) -> Option<Instruction>;
+    fn emulate(&self) -> Option<Instruction>;
 }
 
 /// All emulated instructions implement this trait to provide a common

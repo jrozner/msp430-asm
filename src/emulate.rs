@@ -112,3 +112,74 @@ emulated!(Setc, "setc", Bis);
 emulated!(Setn, "Setn", Bis);
 emulated!(Setz, "setz", Bis);
 emulated!(Tst, "tst", Cmp);
+
+mod tests {
+    use crate::emulate::*;
+    use crate::operand::*;
+    use crate::two_operand::*;
+
+    #[test]
+    fn adc_cg() {
+        let source = Operand::Constant(0);
+        let destination = Operand::RegisterDirect(4);
+        let inst = Addc::new(source, OperandWidth::Word, destination);
+        let expected = Adc::new(
+            Some(Operand::RegisterDirect(4)),
+            Some(OperandWidth::Word),
+            inst,
+        );
+        assert_eq!(inst.emulate(), Some(Instruction::Adc(expected)));
+    }
+
+    #[test]
+    fn adc_immediate() {
+        let source = Operand::Immediate(0);
+        let destination = Operand::RegisterDirect(4);
+        let inst = Addc::new(source, OperandWidth::Word, destination);
+        let expected = Adc::new(
+            Some(Operand::RegisterDirect(4)),
+            Some(OperandWidth::Word),
+            inst,
+        );
+        assert_eq!(inst.emulate(), Some(Instruction::Adc(expected)));
+    }
+
+    #[test]
+    fn br() {
+        let source = Operand::RegisterDirect(4);
+        let destination = Operand::RegisterDirect(0);
+        let inst = Mov::new(source, OperandWidth::Word, destination);
+        let expected = Br::new(
+            Some(Operand::RegisterDirect(4)),
+            None,
+            inst,
+        );
+        assert_eq!(inst.emulate(), Some(Instruction::Br(expected)));
+    }
+
+    #[test]
+    fn clrc_cg() {
+        let source = Operand::Constant(1);
+        let destination = Operand::RegisterDirect(2);
+        let inst = Bic::new(source, OperandWidth::Word, destination);
+        let expected = Clrc::new(
+            None,
+            None,
+            inst,
+        );
+        assert_eq!(inst.emulate(), Some(Instruction::Clrc(expected)));
+    }
+
+    #[test]
+    fn clrc_immediate() {
+        let source = Operand::Immediate(1);
+        let destination = Operand::RegisterDirect(2);
+        let inst = Bic::new(source, OperandWidth::Word, destination);
+        let expected = Clrc::new(
+            None,
+            None,
+            inst,
+        );
+        assert_eq!(inst.emulate(), Some(Instruction::Clrc(expected)));
+    }
+}

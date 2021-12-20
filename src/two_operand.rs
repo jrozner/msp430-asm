@@ -152,7 +152,7 @@ two_operand!(Addc, "addc");
 
 impl Emulate for Addc {
     fn emulate(&self) -> Option<Instruction> {
-        if self.source == Operand::Constant(0) {
+        if self.source == Operand::Constant(0) || self.source == Operand::Immediate(0) {
             Some(Instruction::Adc(emulate::Adc::new(
                 Some(self.destination),
                 Some(self.operand_width),
@@ -247,7 +247,7 @@ impl Emulate for Bic {
     fn emulate(&self) -> Option<Instruction> {
         if self.destination == Operand::RegisterDirect(2) {
             match self.source {
-                Operand::Constant(1) => {
+                Operand::Constant(1) | Operand::Immediate(1) => {
                     return Some(Instruction::Clrc(emulate::Clrc::new(None, None, *self)))
                 }
                 Operand::Constant(2) => {

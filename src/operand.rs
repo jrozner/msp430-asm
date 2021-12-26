@@ -1,4 +1,3 @@
-use std::convert::TryInto;
 use std::fmt;
 
 use crate::DecodeError;
@@ -36,7 +35,7 @@ pub enum Operand {
     /// The operand is the immediate value following the instruction word
     ///
     /// This requires an additional word
-    Immediate(i16),
+    Immediate(u16),
     /// The operand is stored at the address specified by the immediate value
     /// after the instruction word
     ///
@@ -118,10 +117,10 @@ impl fmt::Display for Operand {
                 }
             }
             Self::Immediate(i) => {
-                if *i >= 0 {
+                if *i & 0x8000 == 0 {
                     write!(f, "#{:#x}", i)
                 } else {
-                    write!(f, "#-{:#x}", -i)
+                    write!(f, "#-{:#x}", *i as i16)
                 }
             }
             Self::Absolute(a) => write!(f, "&{:#x}", a),
@@ -210,7 +209,7 @@ pub fn parse_source(register: u8, source: u16, data: &[u8]) -> Result<(Operand, 
                     Err(DecodeError::MissingSource)
                 } else {
                     let (bytes, remaining_data) = data.split_at(std::mem::size_of::<u16>());
-                    let second_word = i16::from_le_bytes(bytes.try_into().unwrap());
+                    let second_word = u16::from_le_bytes(bytes.try_into().unwrap());
                     Ok((Operand::Immediate(second_word), remaining_data))
                 }
             }
@@ -275,10 +274,10 @@ mod tests {
     }
 
     #[test]
-    fn source_pc_immediate_negative() {
+    fn source_pc_immediate_high_bit() {
         let data = [0xfe, 0xff];
         let source = parse_source(0, 3, &data);
-        assert_eq!(source, Ok((Operand::Immediate(-2), &data[2..])));
+        assert_eq!(source, Ok((Operand::Immediate(65534), &data[2..])));
     }
 
     #[test]

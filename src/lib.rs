@@ -1,5 +1,3 @@
-use std::convert::TryInto;
-
 pub mod decode_error;
 pub mod emulate;
 pub mod instruction;

@@ -248,16 +248,16 @@ impl Emulate for Bic {
         if self.destination == Operand::RegisterDirect(2) {
             match self.source {
                 Operand::Constant(1) => {
-                    return Some(Instruction::Clrc(emulate::Clrc::new(None, None, *self)))
+                    return Some(Instruction::Clrc(emulate::Clrc::new(None, None, *self)));
                 }
                 Operand::Constant(2) => {
-                    return Some(Instruction::Clrn(emulate::Clrn::new(None, None, *self)))
+                    return Some(Instruction::Clrn(emulate::Clrn::new(None, None, *self)));
                 }
                 Operand::Constant(4) => {
-                    return Some(Instruction::Clrz(emulate::Clrz::new(None, None, *self)))
+                    return Some(Instruction::Clrz(emulate::Clrz::new(None, None, *self)));
                 }
                 Operand::Constant(8) => {
-                    return Some(Instruction::Dint(emulate::Dint::new(None, None, *self)))
+                    return Some(Instruction::Dint(emulate::Dint::new(None, None, *self)));
                 }
                 _ => {}
             }
@@ -274,16 +274,16 @@ impl Emulate for Bis {
         if self.destination == Operand::RegisterDirect(2) {
             match self.source {
                 Operand::Constant(1) => {
-                    return Some(Instruction::Setc(emulate::Setc::new(None, None, *self)))
+                    return Some(Instruction::Setc(emulate::Setc::new(None, None, *self)));
                 }
                 Operand::Constant(2) => {
-                    return Some(Instruction::Setz(emulate::Setz::new(None, None, *self)))
+                    return Some(Instruction::Setz(emulate::Setz::new(None, None, *self)));
                 }
                 Operand::Constant(4) => {
-                    return Some(Instruction::Setn(emulate::Setn::new(None, None, *self)))
+                    return Some(Instruction::Setn(emulate::Setn::new(None, None, *self)));
                 }
                 Operand::Constant(8) => {
-                    return Some(Instruction::Eint(emulate::Eint::new(None, None, *self)))
+                    return Some(Instruction::Eint(emulate::Eint::new(None, None, *self)));
                 }
                 _ => {}
             }

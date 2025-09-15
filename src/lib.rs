@@ -10,7 +10,7 @@ use decode_error::DecodeError;
 use emulate::Emulate;
 use instruction::Instruction;
 use jxx::*;
-use operand::{parse_destination, parse_source, OperandWidth};
+use operand::{OperandWidth, parse_destination, parse_source};
 use single_operand::*;
 use two_operand::*;
 

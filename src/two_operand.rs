@@ -86,14 +86,14 @@ impl Emulate for Mov {
             return Some(Instruction::Nop(emulate::Nop::new(None, None, *self)));
         }
 
-        if self.source == Operand::Constant(0) || self.source == Operand::Immediate(0) {
-            if let Operand::RegisterDirect(_) = self.destination {
-                return Some(Instruction::Clr(emulate::Clr::new(
-                    Some(self.destination),
-                    None,
-                    *self,
-                )));
-            }
+        if (self.source == Operand::Constant(0) || self.source == Operand::Immediate(0))
+            && let Operand::RegisterDirect(_) = self.destination
+        {
+            return Some(Instruction::Clr(emulate::Clr::new(
+                Some(self.destination),
+                None,
+                *self,
+            )));
         }
 
         if self.source == Operand::RegisterIndirectAutoIncrement(1) {
